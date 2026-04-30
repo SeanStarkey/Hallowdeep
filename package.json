@@ -4,6 +4,7 @@
   "private": true,
   "description": "Static Halloween roguelike with a shared high-score API.",
   "scripts": {
+    "deploy": "./deploy.sh",
     "start": "node server.js"
   },
   "engines": {

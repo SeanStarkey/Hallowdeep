@@ -30,7 +30,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const SCORE_API = "/api/scores";
+const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
 
