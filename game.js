@@ -23,8 +23,10 @@ const els = {
   newGame: document.querySelector("#new-game")
 };
 
-const W = 48;
-const H = 32;
+const VIEW_W = 48;
+const VIEW_H = 32;
+const W = 96;
+const H = 64;
 const TILE = 20;
 const FLOOR = ".";
 const WALL = "#";
@@ -65,6 +67,7 @@ let playerName = loadPlayerName();
 let highScores = [];
 let scoreStatus = "Loading shared scores...";
 let examineText = "Nothing examined.";
+let camera = { x: 0, y: 0 };
 
 function rand(max) {
   return Math.floor(Math.random() * max);
@@ -167,9 +170,9 @@ function makeMap() {
   const map = Array.from({ length: H }, () => Array.from({ length: W }, () => WALL));
   const rooms = [];
 
-  for (let i = 0; i < 84; i++) {
-    const rw = 5 + rand(8);
-    const rh = 4 + rand(6);
+  for (let i = 0; i < 190; i++) {
+    const rw = 6 + rand(10);
+    const rh = 4 + rand(8);
     const rx = 1 + rand(W - rw - 2);
     const ry = 1 + rand(H - rh - 2);
     const room = { x: rx, y: ry, w: rw, h: rh, cx: Math.floor(rx + rw / 2), cy: Math.floor(ry + rh / 2) };
@@ -219,6 +222,24 @@ function roomPoint(room) {
     y: room.y + 1 + rand(Math.max(1, room.h - 2))
   };
 }
+
+function updateCamera() {
+  camera.x = Math.max(0, Math.min(W - VIEW_W, state.hero.x - Math.floor(VIEW_W / 2)));
+  camera.y = Math.max(0, Math.min(H - VIEW_H, state.hero.y - Math.floor(VIEW_H / 2)));
+}
+
+function toScreenX(x) {
+  return (x - camera.x) * TILE;
+}
+
+function toScreenY(y) {
+  return (y - camera.y) * TILE;
+}
+
+function inViewport(x, y) {
+  return x >= camera.x && y >= camera.y && x < camera.x + VIEW_W && y < camera.y + VIEW_H;
+}
+
 function monsterForDepth(depth) {
   const candidates = monsterBook.filter((monster) => monster.minDepth <= depth);
   const nearby = candidates.filter((monster) => monster.minDepth >= depth - 2);
@@ -258,7 +279,7 @@ function placeLevel(depth, hero) {
 
   const monsters = [];
   const occupied = new Set([key(hero.x, hero.y), key(stairs.x, stairs.y)]);
-  const monsterCount = Math.min(9 + depth * 2, 22);
+  const monsterCount = Math.min(18 + depth * 3, 40);
 
   for (let i = 0; i < monsterCount; i++) {
     const room = rooms[1 + rand(Math.max(1, rooms.length - 1))] || start;
@@ -275,7 +296,7 @@ function placeLevel(depth, hero) {
   }
 
   const tonics = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     const room = rooms[rand(rooms.length)] || start;
     const p = roomPoint(room);
     const k = key(p.x, p.y);
@@ -285,7 +306,7 @@ function placeLevel(depth, hero) {
   }
 
   const equipment = [];
-  const equipmentCount = 1 + (chance(0.45) ? 1 : 0);
+  const equipmentCount = 2 + (chance(0.55) ? 1 : 0);
   for (let i = 0; i < equipmentCount; i++) {
     const room = rooms[rand(rooms.length)] || start;
     const p = roomPoint(room);
@@ -439,8 +460,8 @@ function canvasTile(event) {
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
   return {
-    x: Math.floor((event.clientX - rect.left) * scaleX / TILE),
-    y: Math.floor((event.clientY - rect.top) * scaleY / TILE)
+    x: camera.x + Math.floor((event.clientX - rect.left) * scaleX / TILE),
+    y: camera.y + Math.floor((event.clientY - rect.top) * scaleY / TILE)
   };
 }
 
@@ -598,54 +619,56 @@ function visible(x, y) {
 
 function drawTile(x, y, fill) {
   ctx.fillStyle = fill;
-  ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+  ctx.fillRect(toScreenX(x), toScreenY(y), TILE, TILE);
 }
 
 function drawGlyph(glyph, x, y, color, size = 16) {
+  if (!inViewport(x, y)) return;
   ctx.fillStyle = color;
   ctx.font = `700 ${size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(glyph, x * TILE + TILE / 2, y * TILE + TILE / 2 + 1);
+  ctx.fillText(glyph, toScreenX(x) + TILE / 2, toScreenY(y) + TILE / 2 + 1);
 }
 
 function renderMap() {
+  updateCamera();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
+  for (let y = camera.y; y < camera.y + VIEW_H; y++) {
+    for (let x = camera.x; x < camera.x + VIEW_W; x++) {
       const seen = visible(x, y);
       const tile = state.map[y][x];
       const base = tile === WALL ? "#3f3a2d" : "#20271f";
       drawTile(x, y, seen ? base : "#080908");
       if (seen && tile === WALL) {
         ctx.fillStyle = "#6c6047";
-        ctx.fillRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+        ctx.fillRect(toScreenX(x) + 2, toScreenY(y) + 2, TILE - 4, TILE - 4);
       }
       if (seen && tile === STAIRS) drawGlyph(">", x, y, "#9f8bd3", 17);
     }
   }
 
   for (const tonic of state.tonics) {
-    if (visible(tonic.x, tonic.y)) drawGlyph("!", tonic.x, tonic.y, "#9fd37f", 17);
+    if (inViewport(tonic.x, tonic.y) && visible(tonic.x, tonic.y)) drawGlyph("!", tonic.x, tonic.y, "#9fd37f", 17);
   }
 
   for (const item of state.equipment) {
-    if (visible(item.x, item.y)) drawGlyph("*", item.x, item.y, "#d9d0ba", 18);
+    if (inViewport(item.x, item.y) && visible(item.x, item.y)) drawGlyph("*", item.x, item.y, "#d9d0ba", 18);
   }
 
   for (const monster of state.monsters) {
-    if (visible(monster.x, monster.y)) drawGlyph(monster.glyph, monster.x, monster.y, monster.color);
+    if (inViewport(monster.x, monster.y) && visible(monster.x, monster.y)) drawGlyph(monster.glyph, monster.x, monster.y, monster.color);
   }
 
   drawGlyph("@", state.hero.x, state.hero.y, "#e2b04f", 18);
 
   const gradient = ctx.createRadialGradient(
-    state.hero.x * TILE + TILE / 2,
-    state.hero.y * TILE + TILE / 2,
+    toScreenX(state.hero.x) + TILE / 2,
+    toScreenY(state.hero.y) + TILE / 2,
     TILE * 2,
-    state.hero.x * TILE + TILE / 2,
-    state.hero.y * TILE + TILE / 2,
+    toScreenX(state.hero.x) + TILE / 2,
+    toScreenY(state.hero.y) + TILE / 2,
     TILE * (heroLight(state.hero) + 2)
   );
   gradient.addColorStop(0, "rgba(0,0,0,0)");
