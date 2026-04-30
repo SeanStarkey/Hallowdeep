@@ -1,0 +1,12 @@
+{
+  "name": "hallowdeep",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static Halloween roguelike with a shared high-score API.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
