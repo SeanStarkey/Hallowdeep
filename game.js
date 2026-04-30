@@ -69,6 +69,129 @@ let scoreStatus = "Loading shared scores...";
 let examineText = "Nothing examined.";
 let camera = { x: 0, y: 0 };
 
+const spritePalettes = {
+  hero: { a: "#e2b04f", b: "#f4ecd8", c: "#7f4f2c", d: "#2f2416" },
+  stairs: { a: "#8a6fb0", b: "#cbb7f1", c: "#4b3c64" },
+  tonic: { a: "#79a56f", b: "#e2b04f", c: "#f4ecd8", d: "#5a3a1d" },
+  gear: { a: "#d9d0ba", b: "#7d7767", c: "#e2b04f" },
+  shade: { a: "#9f8bd3", b: "#d9d0ff", c: "#4d3e75" },
+  banshee: { a: "#b7d7d8", b: "#eefcff", c: "#5c7a83" },
+  mummy: { a: "#c9b073", b: "#f0dfaa", c: "#6b5a35" },
+  plague: { a: "#7f9f72", b: "#d4e6b7", c: "#2c3729" },
+  vampire: { a: "#cf4f55", b: "#f4ecd8", c: "#2c1720" },
+  devil: { a: "#d65f49", b: "#f0aa6c", c: "#4b1f1d" },
+  horseman: { a: "#d98635", b: "#f3c179", c: "#39261b" },
+  wendigo: { a: "#d9d0ba", b: "#ffffff", c: "#4a4740" }
+};
+
+const spritePatterns = {
+  hero: [
+    "....aaaa....",
+    "...aaaaaa...",
+    "...abbaaa...",
+    "..abbbba...",
+    "..aaabba...",
+    "...cccc....",
+    "..cccccc...",
+    ".cccdcccc..",
+    "...c..c....",
+    "..cc..cc..."
+  ],
+  stairs: [
+    "..........",
+    ".......aaa",
+    ".....aaaac",
+    "...aaaaccc",
+    ".aaaaccccc",
+    "aaaccccccc",
+    "cccccccccc"
+  ],
+  tonic: [
+    "....bb....",
+    "...bbbb...",
+    "...dddd...",
+    "..daaaad..",
+    ".daacaad.",
+    ".daaaaad.",
+    "..dddddd.."
+  ],
+  gear: [
+    "...aa...",
+    "..abba..",
+    ".abccba.",
+    ".acbbca.",
+    ".abccba.",
+    "..abba..",
+    "...aa..."
+  ],
+  shade: [
+    "...aaaa...",
+    "..aaaaaa..",
+    ".aaabbaaa.",
+    ".aaaaaaa..",
+    "..aaaacc..",
+    "...aaaa...",
+    "..aa..aa.."
+  ],
+  banshee: [
+    "...bbbb...",
+    "..baaaab..",
+    ".baabbaab.",
+    ".baaaaab..",
+    "..baaaab..",
+    "...b..b..."
+  ],
+  mummy: [
+    "..bbbbbb..",
+    ".baaaaab.",
+    ".abababa.",
+    ".baaaaab.",
+    "..ababab.",
+    ".baaaaab.",
+    "..bb..bb."
+  ],
+  plague: [
+    "...aaaa...",
+    "..acccca..",
+    ".acbbbca.",
+    ".acbbcca.",
+    "..accca..",
+    "...ccc..."
+  ],
+  vampire: [
+    "...cccc...",
+    "..caaaac..",
+    ".cabbabac.",
+    ".caaaaca..",
+    "..caaac...",
+    "...cc....."
+  ],
+  devil: [
+    ".c....c.",
+    ".ac..ca.",
+    ".aaaaaa.",
+    "aabbabaa",
+    ".aaaaaa.",
+    "..a..a.."
+  ],
+  horseman: [
+    "...bb....",
+    "..baab...",
+    ".baaaab..",
+    "..cccc...",
+    ".caaaaac.",
+    ".cc..cc.."
+  ],
+  wendigo: [
+    ".c....c.",
+    "..cbbc..",
+    "..baab..",
+    ".baaaab.",
+    ".acccca.",
+    "..a..a.."
+  ]
+};
+
 function rand(max) {
   return Math.floor(Math.random() * max);
 }
@@ -622,13 +745,38 @@ function drawTile(x, y, fill) {
   ctx.fillRect(toScreenX(x), toScreenY(y), TILE, TILE);
 }
 
-function drawGlyph(glyph, x, y, color, size = 16) {
+function drawSprite(sprite, x, y) {
   if (!inViewport(x, y)) return;
-  ctx.fillStyle = color;
-  ctx.font = `700 ${size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(glyph, toScreenX(x) + TILE / 2, toScreenY(y) + TILE / 2 + 1);
+  const pattern = spritePatterns[sprite] || spritePatterns.gear;
+  const palette = spritePalettes[sprite] || spritePalettes.gear;
+  const pixel = 2;
+  const width = Math.max(...pattern.map((row) => row.length)) * pixel;
+  const height = pattern.length * pixel;
+  const ox = toScreenX(x) + Math.floor((TILE - width) / 2);
+  const oy = toScreenY(y) + Math.floor((TILE - height) / 2);
+
+  for (let row = 0; row < pattern.length; row++) {
+    for (let col = 0; col < pattern[row].length; col++) {
+      const swatch = pattern[row][col];
+      if (swatch === ".") continue;
+      ctx.fillStyle = palette[swatch];
+      ctx.fillRect(ox + col * pixel, oy + row * pixel, pixel, pixel);
+    }
+  }
+}
+
+function monsterSprite(monster) {
+  const sprites = {
+    "Salem Shade": "shade",
+    Banshee: "banshee",
+    "Cursed Mummy": "mummy",
+    "Plague Doctor": "plague",
+    "Carpathian Vampire": "vampire",
+    "Jersey Devil": "devil",
+    "Headless Horseman": "horseman",
+    Wendigo: "wendigo"
+  };
+  return sprites[monster.name] || "shade";
 }
 
 function renderMap() {
@@ -645,23 +793,23 @@ function renderMap() {
         ctx.fillStyle = "#6c6047";
         ctx.fillRect(toScreenX(x) + 2, toScreenY(y) + 2, TILE - 4, TILE - 4);
       }
-      if (seen && tile === STAIRS) drawGlyph(">", x, y, "#9f8bd3", 17);
+      if (seen && tile === STAIRS) drawSprite("stairs", x, y);
     }
   }
 
   for (const tonic of state.tonics) {
-    if (inViewport(tonic.x, tonic.y) && visible(tonic.x, tonic.y)) drawGlyph("!", tonic.x, tonic.y, "#9fd37f", 17);
+    if (inViewport(tonic.x, tonic.y) && visible(tonic.x, tonic.y)) drawSprite("tonic", tonic.x, tonic.y);
   }
 
   for (const item of state.equipment) {
-    if (inViewport(item.x, item.y) && visible(item.x, item.y)) drawGlyph("*", item.x, item.y, "#d9d0ba", 18);
+    if (inViewport(item.x, item.y) && visible(item.x, item.y)) drawSprite("gear", item.x, item.y);
   }
 
   for (const monster of state.monsters) {
-    if (inViewport(monster.x, monster.y) && visible(monster.x, monster.y)) drawGlyph(monster.glyph, monster.x, monster.y, monster.color);
+    if (inViewport(monster.x, monster.y) && visible(monster.x, monster.y)) drawSprite(monsterSprite(monster), monster.x, monster.y);
   }
 
-  drawGlyph("@", state.hero.x, state.hero.y, "#e2b04f", 18);
+  drawSprite("hero", state.hero.x, state.hero.y);
 
   const gradient = ctx.createRadialGradient(
     toScreenX(state.hero.x) + TILE / 2,
