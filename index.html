@@ -13,7 +13,11 @@
           <div>
             <h1>Hallowdeep</h1>
           </div>
-          <button id="new-game" class="command" type="button">New Run</button>
+          <div class="top-actions">
+            <span id="version" class="version">Version</span>
+            <button id="roadmap-open" class="command secondary" type="button">Roadmap</button>
+            <button id="new-game" class="command" type="button">New Run</button>
+          </div>
         </header>
 
         <canvas id="game" width="960" height="640" aria-label="Hallowdeep dungeon map"></canvas>
@@ -103,6 +107,19 @@
         </section>
       </aside>
     </main>
+
+    <div id="roadmap-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="roadmap-title">
+      <section class="modal-panel">
+        <div class="modal-header">
+          <div>
+            <p class="label">Upcoming Features</p>
+            <h2 id="roadmap-title">Roadmap</h2>
+          </div>
+          <button id="roadmap-close" class="icon-command" type="button" title="Close roadmap">x</button>
+        </div>
+        <div id="roadmap-content" class="roadmap-content">Loading roadmap...</div>
+      </section>
+    </div>
 
     <script src="game.js"></script>
   </body>

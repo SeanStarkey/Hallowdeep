@@ -56,6 +56,19 @@ button {
   min-height: 4.75rem;
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.version {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
 .label {
   margin: 0 0 0.2rem;
   color: var(--gold);
@@ -129,6 +142,13 @@ h3 {
   min-width: 7.5rem;
   padding: 0.7rem 0.9rem;
   font-weight: 800;
+}
+
+.command.secondary {
+  min-width: 6.4rem;
+  background: #22251f;
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 .command:hover,
@@ -376,6 +396,77 @@ canvas {
   color: #b9e889;
 }
 
+.hidden {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(8, 9, 8, 0.78);
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-panel {
+  width: min(48rem, 100%);
+  max-height: min(42rem, calc(100vh - 2rem));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1a1c18;
+  box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.roadmap-content {
+  max-height: calc(min(42rem, 100vh - 2rem) - 5.5rem);
+  overflow: auto;
+  padding: 1rem 1.25rem 1.25rem;
+  color: var(--muted);
+}
+
+.roadmap-content h2 {
+  margin: 1.1rem 0 0.5rem;
+  color: var(--gold);
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.roadmap-content h2:first-child {
+  margin-top: 0;
+}
+
+.roadmap-content ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+  padding-left: 1.1rem;
+}
+
+.roadmap-content li::marker {
+  color: var(--gold);
+}
+
+.roadmap-content code {
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
@@ -383,6 +474,16 @@ canvas {
 
   .panel {
     padding-top: 0;
+  }
+
+  .topbar,
+  .top-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .top-actions {
+    gap: 0.5rem;
   }
 
   .mobile-controls {

@@ -4,6 +4,7 @@ const ctx = canvas.getContext("2d");
 const els = {
   heroName: document.querySelector("#hero-name"),
   portrait: document.querySelector(".portrait"),
+  version: document.querySelector("#version"),
   depth: document.querySelector("#depth"),
   level: document.querySelector("#level"),
   hp: document.querySelector("#hp"),
@@ -20,6 +21,10 @@ const els = {
   clearScores: document.querySelector("#clear-scores"),
   log: document.querySelector("#log"),
   potion: document.querySelector("#drink-potion"),
+  roadmapOpen: document.querySelector("#roadmap-open"),
+  roadmapClose: document.querySelector("#roadmap-close"),
+  roadmapModal: document.querySelector("#roadmap-modal"),
+  roadmapContent: document.querySelector("#roadmap-content"),
   newGame: document.querySelector("#new-game")
 };
 
@@ -32,6 +37,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
+const VERSION = "2026.05.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
@@ -568,6 +574,58 @@ async function loadScores() {
   renderUi();
 }
 
+function markdownToRoadmap(markdown) {
+  const lines = markdown.split("\n");
+  const html = [];
+  let inList = false;
+
+  const inline = (value) =>
+    escapeHtml(value).replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  for (const line of lines) {
+    if (line.startsWith("# ")) continue;
+    if (line.startsWith("## ")) {
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
+      html.push(`<h2>${inline(line.slice(3))}</h2>`);
+      continue;
+    }
+    if (line.startsWith("- ")) {
+      if (!inList) {
+        html.push("<ul>");
+        inList = true;
+      }
+      html.push(`<li>${inline(line.slice(2))}</li>`);
+      continue;
+    }
+    if (line.trim() === "") continue;
+  }
+
+  if (inList) html.push("</ul>");
+  return html.join("");
+}
+
+async function loadRoadmap() {
+  try {
+    const response = await fetch("TODO.md", { headers: { Accept: "text/markdown,text/plain" } });
+    if (!response.ok) throw new Error(`TODO fetch returned ${response.status}`);
+    els.roadmapContent.innerHTML = markdownToRoadmap(await response.text());
+  } catch {
+    els.roadmapContent.textContent = "Roadmap unavailable.";
+  }
+}
+
+function openRoadmap() {
+  els.roadmapModal.classList.remove("hidden");
+  loadRoadmap();
+}
+
+function closeRoadmap() {
+  els.roadmapModal.classList.add("hidden");
+}
+
 
 function scoreRun() {
   const hero = state.hero;
@@ -1020,6 +1078,7 @@ function renderMap() {
 
 function renderUi() {
   const hero = state.hero;
+  els.version.textContent = VERSION;
   els.depth.textContent = state.depth;
   els.level.textContent = hero.level;
   els.hp.textContent = `${hero.hp}/${hero.maxHp}`;
@@ -1052,6 +1111,11 @@ function render() {
 
 window.addEventListener("keydown", (event) => {
   if (event.target instanceof HTMLInputElement) return;
+
+  if (event.key === "Escape" && !els.roadmapModal.classList.contains("hidden")) {
+    closeRoadmap();
+    return;
+  }
 
   const dirs = {
     ArrowUp: [0, -1],
@@ -1107,6 +1171,11 @@ document.querySelectorAll("[data-move]").forEach((button) => {
 els.heroName.addEventListener("change", () => setPlayerName(els.heroName.value));
 els.heroName.addEventListener("keydown", (event) => {
   if (event.key === "Enter") els.heroName.blur();
+});
+els.roadmapOpen.addEventListener("click", openRoadmap);
+els.roadmapClose.addEventListener("click", closeRoadmap);
+els.roadmapModal.addEventListener("click", (event) => {
+  if (event.target === els.roadmapModal) closeRoadmap();
 });
 els.potion.addEventListener("click", drinkPotion);
 els.clearScores.addEventListener("click", clearScores);

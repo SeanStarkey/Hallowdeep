@@ -3,6 +3,7 @@
 ## Gameplay
 
 - Add more monsters with `ability` values wired through `abilityDefinitions`.
+- Add ranged weapons for the character.
 - Add ranged or area abilities for late-depth monsters.
 - Add themed dungeon features such as locked doors, coffins, altars, traps, and shrines.
 - Add a rest/wait action so players can skip a turn tactically.
@@ -10,6 +11,9 @@
 - Add consumables beyond pumpkin tonics, such as holy water, salt circles, and lantern oil.
 - Add boss floors every few depths with unique monsters and score bonuses.
 - Add a win condition or final depth instead of endless descent.
+- Add more attributes to the character.
+- Add a display of the score.
+- Add a crafting ability.
 
 ## Balance
 
