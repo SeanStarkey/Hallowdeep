@@ -179,6 +179,7 @@ canvas {
 
 .hero-card,
 .stats,
+.conditions,
 .attributes,
 .inventory,
 .equipment,
@@ -266,12 +267,71 @@ canvas {
 }
 
 .attributes,
+.conditions,
 .inventory,
 .equipment,
 .scores,
 .examine,
 .log {
   padding: 0.85rem;
+}
+
+.conditions h3 {
+  margin-bottom: 0.5rem;
+}
+
+.status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 2rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.35rem 0.55rem;
+  background: #22251f;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.status-badge small {
+  display: grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: rgba(244, 236, 216, 0.12);
+  color: inherit;
+  font: 800 0.72rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.status-badge.clear {
+  color: var(--muted);
+}
+
+.status-badge.poison {
+  border-color: #5f824f;
+  background: #1f2d1d;
+  color: #b9e889;
+}
+
+.status-badge.dread {
+  border-color: #765f9a;
+  background: #211b2f;
+  color: #d7c6ff;
+}
+
+.status-badge.curse {
+  border-color: #884b4b;
+  background: #321d1d;
+  color: #ffb0a6;
 }
 
 .section-title {

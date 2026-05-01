@@ -10,6 +10,7 @@ const els = {
   hp: document.querySelector("#hp"),
   xp: document.querySelector("#xp"),
   score: document.querySelector("#score"),
+  statuses: document.querySelector("#statuses"),
   str: document.querySelector("#str"),
   agi: document.querySelector("#agi"),
   will: document.querySelector("#will"),
@@ -374,6 +375,26 @@ function statusText(hero) {
   if (hero.statuses.dread > 0) labels.push(`dread ${hero.statuses.dread}`);
   if (hero.statuses.curse > 0) labels.push(`curse ${hero.statuses.curse}`);
   return labels.length ? labels.join(", ") : "clear";
+}
+
+function statusBadges(hero) {
+  const statuses = [
+    { key: "poison", label: "Poison" },
+    { key: "dread", label: "Dread" },
+    { key: "curse", label: "Curse" }
+  ];
+  const active = statuses.filter((status) => hero.statuses[status.key] > 0);
+
+  if (!active.length) {
+    return '<span class="status-badge clear">Clear</span>';
+  }
+
+  return active
+    .map(
+      (status) =>
+        `<span class="status-badge ${status.key}"><b>${status.label}</b><small>${hero.statuses[status.key]}</small></span>`
+    )
+    .join("");
 }
 
 function makeHero() {
@@ -1096,6 +1117,7 @@ function renderUi() {
   els.hp.textContent = `${hero.hp}/${hero.maxHp}`;
   els.xp.textContent = `${hero.xp}/${hero.nextXp}`;
   els.score.textContent = scoreRun().toLocaleString();
+  els.statuses.innerHTML = statusBadges(hero);
   els.str.textContent = `${hero.str} (+${gearBonus(hero, "attack")} atk)`;
   els.agi.textContent = hero.agi;
   els.will.textContent = `${heroWill(hero)} (+${gearBonus(hero, "defense")} def)`;
