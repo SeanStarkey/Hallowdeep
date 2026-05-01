@@ -69,4 +69,4 @@ Deployment notes for the current personal hosting setup live in [`deploy/DEPLOY.
 
 ## License
 
-No license has been specified yet.
+Hallowdeep is released under the MIT License. See [`LICENSE`](LICENSE).
