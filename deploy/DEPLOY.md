@@ -1,5 +1,7 @@
 # Hallowdeep Deployment
 
+**These are instructions for deploying to my own personal site. They are probably not relavent to any other site.**
+
 Hallowdeep is intended to be deployed under the main site root at:
 
 ```text
