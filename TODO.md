@@ -32,7 +32,6 @@
 ## UI
 
 - Add an on-screen control reference outside the game canvas or in a pause/help modal.
-- Add a minimap or explored-area indicator for large scrolling floors.
 - Add hit flashes, damage numbers, and death effects.
 - Improve mobile controls with diagonal movement or tap-to-move.
 - Add a death screen showing depth, kills by monster type, gear held at death, and score before the new-run prompt.
