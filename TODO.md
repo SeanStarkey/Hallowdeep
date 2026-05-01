@@ -13,6 +13,7 @@
 - Add more attributes to the character.
 - Add a crafting ability.
 - Add a light source, making the spotlight different sizes based on what you have.
+- Add a quest system.
 
 ## Balance
 
