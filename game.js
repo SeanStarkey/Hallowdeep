@@ -52,14 +52,14 @@ const equipmentBook = [
 ];
 
 const monsterBook = [
-  { name: "Salem Shade", glyph: "S", hp: 7, atk: 2, xp: 4, minDepth: 1, color: "#9f8bd3" },
-  { name: "Banshee", glyph: "B", hp: 8, atk: 3, xp: 5, minDepth: 1, color: "#b7d7d8" },
-  { name: "Cursed Mummy", glyph: "M", hp: 11, atk: 4, xp: 7, minDepth: 2, color: "#c9b073" },
-  { name: "Plague Doctor", glyph: "P", hp: 12, atk: 4, xp: 8, minDepth: 3, color: "#7f9f72" },
-  { name: "Carpathian Vampire", glyph: "V", hp: 14, atk: 5, xp: 10, minDepth: 4, color: "#cf4f55" },
-  { name: "Jersey Devil", glyph: "J", hp: 16, atk: 6, xp: 12, minDepth: 5, color: "#d65f49" },
-  { name: "Headless Horseman", glyph: "H", hp: 18, atk: 7, xp: 14, minDepth: 6, color: "#d98635" },
-  { name: "Wendigo", glyph: "W", hp: 22, atk: 8, xp: 18, minDepth: 8, color: "#d9d0ba" }
+  { name: "Salem Shade", glyph: "S", hp: 7, atk: 2, xp: 4, minDepth: 1, color: "#9f8bd3", ability: "blink" },
+  { name: "Banshee", glyph: "B", hp: 8, atk: 3, xp: 5, minDepth: 1, color: "#b7d7d8", ability: "scream" },
+  { name: "Cursed Mummy", glyph: "M", hp: 11, atk: 4, xp: 7, minDepth: 2, color: "#c9b073", ability: "curse" },
+  { name: "Plague Doctor", glyph: "P", hp: 12, atk: 4, xp: 8, minDepth: 3, color: "#7f9f72", ability: "poison" },
+  { name: "Carpathian Vampire", glyph: "V", hp: 14, atk: 5, xp: 10, minDepth: 4, color: "#cf4f55", ability: "drain" },
+  { name: "Jersey Devil", glyph: "J", hp: 16, atk: 6, xp: 12, minDepth: 5, color: "#d65f49", ability: "hunter" },
+  { name: "Headless Horseman", glyph: "H", hp: 18, atk: 7, xp: 14, minDepth: 6, color: "#d98635", ability: "charge" },
+  { name: "Wendigo", glyph: "W", hp: 22, atk: 8, xp: 18, minDepth: 8, color: "#d9d0ba", ability: "ravenous" }
 ];
 
 let state;
@@ -192,6 +192,85 @@ const spritePatterns = {
   ]
 };
 
+const abilityDefinitions = {
+  blink: {
+    name: "Blink",
+    description: "May vanish to a nearby tile after being struck.",
+    onHeroHitMonster(monster) {
+      if (!chance(0.35)) return;
+      const spots = nearbyOpenTiles(monster.x, monster.y, 4);
+      if (!spots.length) return;
+      const spot = spots[rand(spots.length)];
+      monster.x = spot.x;
+      monster.y = spot.y;
+      addLog(`${monster.name} flickers away.`);
+    }
+  },
+  scream: {
+    name: "Scream",
+    description: "Hits can rattle your will for a few turns.",
+    onMonsterHitHero(monster, hero) {
+      if (!chance(0.45)) return;
+      addStatus(hero, "dread", 4);
+      addLog(`${monster.name}'s scream chills your nerve.`, "danger");
+    }
+  },
+  curse: {
+    name: "Curse",
+    description: "Hits can weaken your attack for a few turns.",
+    onMonsterHitHero(monster, hero) {
+      if (!chance(0.4)) return;
+      addStatus(hero, "curse", 4);
+      addLog(`${monster.name}'s curse weighs on your arms.`, "danger");
+    }
+  },
+  poison: {
+    name: "Poison",
+    description: "Hits can poison you for ongoing damage.",
+    onMonsterHitHero(monster, hero) {
+      if (!chance(0.45)) return;
+      addStatus(hero, "poison", 5);
+      addLog(`${monster.name} infects the wound.`, "danger");
+    }
+  },
+  drain: {
+    name: "Drain",
+    description: "Heals when it damages you.",
+    onMonsterHitHero(monster, hero, damage) {
+      const healed = Math.min(monster.maxHp - monster.hp, Math.max(1, Math.floor(damage / 2)));
+      if (healed <= 0) return;
+      monster.hp += healed;
+      addLog(`${monster.name} drinks in ${healed} HP.`, "danger");
+    }
+  },
+  hunter: {
+    name: "Hunter",
+    description: "Senses you from farther away.",
+    detectionBonus: 8
+  },
+  charge: {
+    name: "Charge",
+    description: "Can rush in a straight line when it sees you.",
+    beforeMove(monster, hero) {
+      if (!chance(0.45)) return false;
+      const dx = Math.sign(hero.x - monster.x);
+      const dy = Math.sign(hero.y - monster.y);
+      if (monster.x !== hero.x && monster.y !== hero.y) return false;
+      if (distance(monster, hero) < 3 || distance(monster, hero) > 7) return false;
+      const step = monster.x === hero.x ? { x: 0, y: dy } : { x: dx, y: 0 };
+      return moveMonsterSteps(monster, step, 2, `${monster.name} charges through the dark.`);
+    }
+  },
+  ravenous: {
+    name: "Ravenous",
+    description: "Deals extra damage when you are badly wounded.",
+    modifyDamage(monster, hero, damage) {
+      if (hero.hp > hero.maxHp * 0.4) return damage;
+      return damage + 3;
+    }
+  }
+};
+
 function rand(max) {
   return Math.floor(Math.random() * max);
 }
@@ -238,11 +317,13 @@ function gearBonus(hero, stat) {
 }
 
 function heroAttackValue(hero) {
-  return hero.str + gearBonus(hero, "attack");
+  const cursePenalty = hero.statuses.curse > 0 ? 2 : 0;
+  return Math.max(1, hero.str + gearBonus(hero, "attack") - cursePenalty);
 }
 
 function heroWill(hero) {
-  return hero.will + gearBonus(hero, "will");
+  const dreadPenalty = hero.statuses.dread > 0 ? 2 : 0;
+  return Math.max(1, hero.will + gearBonus(hero, "will") - dreadPenalty);
 }
 
 function heroDefense(hero) {
@@ -266,6 +347,27 @@ function itemStats(item) {
   return stats.join(", ") || "no bonus";
 }
 
+function abilityFor(monster) {
+  return abilityDefinitions[monster.ability] || null;
+}
+
+function abilityText(monster) {
+  const ability = abilityFor(monster);
+  return ability ? `${ability.name}: ${ability.description}` : "No special ability.";
+}
+
+function addStatus(hero, status, turns) {
+  hero.statuses[status] = Math.max(hero.statuses[status] || 0, turns);
+}
+
+function statusText(hero) {
+  const labels = [];
+  if (hero.statuses.poison > 0) labels.push(`poison ${hero.statuses.poison}`);
+  if (hero.statuses.dread > 0) labels.push(`dread ${hero.statuses.dread}`);
+  if (hero.statuses.curse > 0) labels.push(`curse ${hero.statuses.curse}`);
+  return labels.length ? labels.join(", ") : "clear";
+}
+
 function makeHero() {
   return {
     x: 2,
@@ -279,6 +381,11 @@ function makeHero() {
     agi: 5,
     will: 4,
     light: 7,
+    statuses: {
+      poison: 0,
+      dread: 0,
+      curse: 0
+    },
     equipment: {
       weapon: { ...emptyWeapon },
       charm: { ...emptyCharm }
@@ -541,6 +648,40 @@ function monsterAt(x, y) {
   return state.monsters.find((m) => m.x === x && m.y === y);
 }
 
+function occupiedByMonster(x, y, except = null) {
+  return state.monsters.some((monster) => monster !== except && monster.x === x && monster.y === y);
+}
+
+function openForMonster(x, y, monster) {
+  return !blocked(x, y) && !occupiedByMonster(x, y, monster) && !(x === state.hero.x && y === state.hero.y);
+}
+
+function nearbyOpenTiles(x, y, radius) {
+  const spots = [];
+  for (let yy = y - radius; yy <= y + radius; yy++) {
+    for (let xx = x - radius; xx <= x + radius; xx++) {
+      if (Math.abs(xx - x) + Math.abs(yy - y) > radius) continue;
+      if (openForMonster(xx, yy, null)) spots.push({ x: xx, y: yy });
+    }
+  }
+  return spots;
+}
+
+function moveMonsterSteps(monster, step, steps, message) {
+  let moved = false;
+  for (let i = 0; i < steps; i++) {
+    const next = { x: monster.x + step.x, y: monster.y + step.y };
+    if (distance(next, state.hero) === 0) break;
+    if (!openForMonster(next.x, next.y, monster)) break;
+    monster.x = next.x;
+    monster.y = next.y;
+    moved = true;
+    if (distance(monster, state.hero) === 1) break;
+  }
+  if (moved && message) addLog(message);
+  return moved;
+}
+
 function tonicAt(x, y) {
   return state.tonics.findIndex((p) => p.x === x && p.y === y);
 }
@@ -553,12 +694,12 @@ function describeTile(x, y) {
   if (x < 0 || y < 0 || x >= W || y >= H) return "Beyond the map.";
   if (!visible(x, y)) return "Unseen darkness. Move closer to examine it.";
   if (x === state.hero.x && y === state.hero.y) {
-    return `${playerName}: HP ${state.hero.hp}/${state.hero.maxHp}, attack ${heroAttackValue(state.hero)}, defense ${heroDefense(state.hero)}, lantern ${heroLight(state.hero)}.`;
+    return `${playerName}: HP ${state.hero.hp}/${state.hero.maxHp}, attack ${heroAttackValue(state.hero)}, defense ${heroDefense(state.hero)}, lantern ${heroLight(state.hero)}, status ${statusText(state.hero)}.`;
   }
 
   const monster = monsterAt(x, y);
   if (monster) {
-    return `${monster.name}: HP ${Math.max(0, monster.hp)}/${monster.maxHp}, attack ${monster.atk}, worth ${monster.xp} XP.`;
+    return `${monster.name}: HP ${Math.max(0, monster.hp)}/${monster.maxHp}, attack ${monster.atk}, worth ${monster.xp} XP. ${abilityText(monster)}`;
   }
 
   const equipmentIndex = equipmentAt(x, y);
@@ -609,9 +750,30 @@ function moveHero(dx, dy) {
   }
 
   if (!state.over) {
+    tickHeroStatuses();
+  }
+
+  if (!state.over) {
     monsterTurn();
   }
   render();
+}
+
+function tickHeroStatuses() {
+  const hero = state.hero;
+  if (hero.statuses.poison > 0) {
+    hero.hp = Math.max(0, hero.hp - 2);
+    addLog("Poison burns for 2 HP.", "danger");
+    if (hero.hp <= 0) {
+      state.over = true;
+      recordScore();
+      addLog("The poison finishes the run.", "danger");
+    }
+  }
+
+  for (const status of Object.keys(hero.statuses)) {
+    if (hero.statuses[status] > 0) hero.statuses[status] -= 1;
+  }
 }
 
 function attack(attacker, defender) {
@@ -619,7 +781,9 @@ function attack(attacker, defender) {
   const roll = 1 + rand(6);
   const attackPower = heroAttack ? heroAttackValue(attacker) : attacker.atk;
   const defensePower = heroAttack ? 0 : heroDefense(defender);
-  const damage = Math.max(1, roll + attackPower - defensePower);
+  const ability = heroAttack ? abilityFor(defender) : abilityFor(attacker);
+  const baseDamage = Math.max(1, roll + attackPower - defensePower);
+  const damage = !heroAttack && ability?.modifyDamage ? ability.modifyDamage(attacker, defender, baseDamage) : baseDamage;
   defender.hp -= damage;
 
   if (heroAttack) {
@@ -629,9 +793,14 @@ function attack(attacker, defender) {
       state.hero.kills += 1;
       gainXp(defender.xp);
       addLog(`${defender.name} falls into dust.`, "good");
+    } else if (ability?.onHeroHitMonster) {
+      ability.onHeroHitMonster(defender, attacker, damage);
     }
   } else {
     addLog(`${attacker.name} wounds you for ${damage}.`, "danger");
+    if (ability?.onMonsterHitHero) {
+      ability.onMonsterHitHero(attacker, defender, damage);
+    }
     if (defender.hp <= 0) {
       defender.hp = 0;
       state.over = true;
@@ -694,13 +863,22 @@ function monsterTurn() {
   const order = [...state.monsters].sort((a, b) => distance(a, hero) - distance(b, hero));
 
   for (const monster of order) {
+    const ability = abilityFor(monster);
     if (distance(monster, hero) === 1) {
       attack(monster, hero);
       if (state.over) return;
       continue;
     }
 
-    if (distance(monster, hero) > heroLight(hero) + 3) continue;
+    const detection = heroLight(hero) + 3 + (ability?.detectionBonus || 0);
+    if (distance(monster, hero) > detection) continue;
+    if (ability?.beforeMove?.(monster, hero)) {
+      if (distance(monster, hero) === 1) {
+        attack(monster, hero);
+        if (state.over) return;
+      }
+      continue;
+    }
 
     const options = [
       { x: monster.x + Math.sign(hero.x - monster.x), y: monster.y },
@@ -708,7 +886,7 @@ function monsterTurn() {
     ].sort(() => Math.random() - 0.5);
 
     for (const next of options) {
-      if (!blocked(next.x, next.y) && !monsterAt(next.x, next.y) && !(next.x === hero.x && next.y === hero.y)) {
+      if (openForMonster(next.x, next.y, monster)) {
         monster.x = next.x;
         monster.y = next.y;
         break;
@@ -728,8 +906,12 @@ function drinkPotion() {
   hero.potions -= 1;
   const heal = 10 + heroWill(hero);
   hero.hp = Math.min(hero.maxHp, hero.hp + heal);
+  for (const status of Object.keys(hero.statuses)) {
+    hero.statuses[status] = Math.max(0, hero.statuses[status] - 2);
+  }
   addLog(`The tonic restores ${heal} HP.`, "good");
-  monsterTurn();
+  tickHeroStatuses();
+  if (!state.over) monsterTurn();
   render();
 }
 
