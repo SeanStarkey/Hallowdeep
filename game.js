@@ -1190,6 +1190,11 @@ canvas.addEventListener("click", (event) => {
 });
 
 document.querySelectorAll("[data-move]").forEach((button) => {
+  button.addEventListener("touchstart", (event) => {
+    event.preventDefault();
+    const [dx, dy] = button.dataset.move.split(",").map(Number);
+    moveHero(dx, dy);
+  }, { passive: false });
   button.addEventListener("click", () => {
     const [dx, dy] = button.dataset.move.split(",").map(Number);
     moveHero(dx, dy);
