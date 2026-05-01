@@ -23,7 +23,6 @@ const els = {
   charm: document.querySelector("#charm"),
   examine: document.querySelector("#examine-text"),
   scores: document.querySelector("#high-scores"),
-  clearScores: document.querySelector("#clear-scores"),
   log: document.querySelector("#log"),
   potion: document.querySelector("#drink-potion"),
   waitActions: document.querySelectorAll("[data-wait]"),
@@ -1153,7 +1152,6 @@ els.roadmapModal.addEventListener("click", (event) => {
 });
 els.potion.addEventListener("click", drinkPotion);
 els.waitActions.forEach((button) => button.addEventListener("click", waitHero));
-els.clearScores.addEventListener("click", clearScores);
 els.newGame.addEventListener("click", newGame);
 
 setPlayerName(playerName);
