@@ -12,7 +12,11 @@ window.HallowdeepData.spritePalettes = {
   vampire: { a: "#cf4f55", b: "#f4ecd8", c: "#2c1720" },
   devil: { a: "#d65f49", b: "#f0aa6c", c: "#4b1f1d" },
   horseman: { a: "#d98635", b: "#f3c179", c: "#39261b" },
-  wendigo: { a: "#d9d0ba", b: "#ffffff", c: "#4a4740" }
+  wendigo: { a: "#d9d0ba", b: "#ffffff", c: "#4a4740" },
+  lantern: { a: "#e87e2a", b: "#f4c456", c: "#1a1208" },
+  blackcat: { a: "#3d3a48", b: "#5f5a70", c: "#f0d060" },
+  scarecrow: { a: "#d4b44a", b: "#7a4f2e", c: "#1a1208" },
+  lich: { a: "#dbd4e8", b: "#7090d0", c: "#1f1830" }
 };
 
 window.HallowdeepData.spritePatterns = {
@@ -120,5 +124,37 @@ window.HallowdeepData.spritePatterns = {
     ".baaaab.",
     ".acccca.",
     "..a..a.."
+  ],
+  lantern: [
+    "..b....",
+    ".aaaaa.",
+    "acabaca",
+    "aaaaaaa",
+    ".accca.",
+    "..aaa.."
+  ],
+  blackcat: [
+    "a.....a",
+    ".aaaaa.",
+    ".acaca.",
+    ".aaaaa.",
+    "..aaa..",
+    ".aa.aa."
+  ],
+  scarecrow: [
+    "...b...",
+    "..bbb..",
+    "baabaa.",
+    "baaaaab",
+    "..aaa..",
+    "..b.b.."
+  ],
+  lich: [
+    "..aaa..",
+    ".abcba.",
+    "..aaa..",
+    "..ccc..",
+    ".ccccc.",
+    "..c.c.."
   ]
 };

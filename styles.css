@@ -349,6 +349,12 @@ canvas {
   color: #ffb0a6;
 }
 
+.status-badge.burning {
+  border-color: #a05c20;
+  background: #311808;
+  color: #ffcc66;
+}
+
 .section-title {
   display: flex;
   align-items: center;

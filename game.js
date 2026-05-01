@@ -142,6 +142,45 @@ const abilityDefinitions = {
       if (hero.hp > hero.maxHp * 0.4) return damage;
       return damage + 3;
     }
+  },
+  ignite: {
+    name: "Ignite",
+    description: "Hits can set you ablaze for ongoing damage.",
+    onMonsterHitHero(monster, hero) {
+      if (!chance(0.4)) return;
+      addStatus(hero, "burning", 4);
+      addLog(`${monster.name} sets you alight.`, "danger");
+    }
+  },
+  nimble: {
+    name: "Nimble",
+    description: "Has a chance to slip aside and halve incoming damage.",
+    onHeroHitMonster(monster, attacker, damage) {
+      if (!chance(0.35)) return;
+      monster.hp += Math.floor(damage / 2);
+      addLog(`The ${monster.name} twists away, lessening the blow.`);
+    }
+  },
+  haunt: {
+    name: "Haunt",
+    description: "Hits can shatter both nerve and will at once.",
+    onMonsterHitHero(monster, hero) {
+      if (!chance(0.4)) return;
+      addStatus(hero, "dread", 3);
+      addStatus(hero, "curse", 3);
+      addLog(`${monster.name}'s hollow gaze unravels you.`, "danger");
+    }
+  },
+  revive: {
+    name: "Revive",
+    description: "Rises from death once with renewed power.",
+    onKilled(monster) {
+      if (monster.revived) return false;
+      monster.revived = true;
+      monster.hp = Math.floor(monster.maxHp * 0.4);
+      addLog(`The ${monster.name} refuses death and rises again!`, "danger");
+      return true;
+    }
   }
 };
 
@@ -237,6 +276,7 @@ function addStatus(hero, status, turns) {
 function statusText(hero) {
   const labels = [];
   if (hero.statuses.poison > 0) labels.push(`poison ${hero.statuses.poison}`);
+  if (hero.statuses.burning > 0) labels.push(`burning ${hero.statuses.burning}`);
   if (hero.statuses.dread > 0) labels.push(`dread ${hero.statuses.dread}`);
   if (hero.statuses.curse > 0) labels.push(`curse ${hero.statuses.curse}`);
   return labels.length ? labels.join(", ") : "clear";
@@ -245,6 +285,7 @@ function statusText(hero) {
 function statusBadges(hero) {
   const statuses = [
     { key: "poison", label: "Poison" },
+    { key: "burning", label: "Burning" },
     { key: "dread", label: "Dread" },
     { key: "curse", label: "Curse" }
   ];
@@ -278,7 +319,8 @@ function makeHero() {
     statuses: {
       poison: 0,
       dread: 0,
-      curse: 0
+      curse: 0,
+      burning: 0
     },
     equipment: {
       weapon: { ...emptyWeapon },
@@ -747,6 +789,16 @@ function tickHeroStatuses() {
     }
   }
 
+  if (!state.over && hero.statuses.burning > 0) {
+    hero.hp = Math.max(0, hero.hp - 1);
+    addLog("Flames scorch for 1 HP.", "danger");
+    if (hero.hp <= 0) {
+      state.over = true;
+      recordScore();
+      addLog("The flames consume the last of your strength.", "danger");
+    }
+  }
+
   for (const status of Object.keys(hero.statuses)) {
     if (hero.statuses[status] > 0) hero.statuses[status] -= 1;
   }
@@ -765,10 +817,14 @@ function attack(attacker, defender) {
   if (heroAttack) {
     addLog(`You strike the ${defender.name} for ${damage}.`);
     if (defender.hp <= 0) {
-      state.monsters = state.monsters.filter((m) => m !== defender);
-      state.hero.kills += 1;
-      gainXp(defender.xp);
-      addLog(`${defender.name} falls into dust.`, "good");
+      if (ability?.onKilled?.(defender)) {
+        // ability intercepted death (e.g. revive)
+      } else {
+        state.monsters = state.monsters.filter((m) => m !== defender);
+        state.hero.kills += 1;
+        gainXp(defender.xp);
+        addLog(`${defender.name} falls into dust.`, "good");
+      }
     } else if (ability?.onHeroHitMonster) {
       ability.onHeroHitMonster(defender, attacker, damage);
     }
@@ -927,11 +983,15 @@ function monsterSprite(monster) {
   const sprites = {
     "Salem Shade": "shade",
     Banshee: "banshee",
+    "Jack-o'-Lantern": "lantern",
     "Cursed Mummy": "mummy",
     "Plague Doctor": "plague",
+    "Black Cat": "blackcat",
     "Carpathian Vampire": "vampire",
     "Jersey Devil": "devil",
+    Scarecrow: "scarecrow",
     "Headless Horseman": "horseman",
+    Lich: "lich",
     Wendigo: "wendigo"
   };
   return sprites[monster.name] || "shade";
