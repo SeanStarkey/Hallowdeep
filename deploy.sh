@@ -3,7 +3,8 @@ set -euo pipefail
 
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${HALLOWDEEP_DEPLOY_DIR:-/var/www/seanstarkey.dev/public/Hallowdeep}"
-OWNER="${HALLOWDEEP_DEPLOY_OWNER:-}"
+OWNER=www-data
+GROUP=www-data
 
 if ! command -v rsync >/dev/null 2>&1; then
   echo "rsync is required for deployment." >&2
@@ -27,9 +28,7 @@ rsync -av --delete \
   "${SOURCE_DIR}/" \
   "${TARGET_DIR}/"
 
-if [ -n "${OWNER}" ]; then
-  chown -R "${OWNER}" "${TARGET_DIR}"
-fi
+  chown -R "${OWNER}:${GROUP}" "${TARGET_DIR}"
 
 echo "Deployment complete."
 echo "Remember to restart the Hallowdeep Node score server if server.js changed."
