@@ -9,6 +9,7 @@ const els = {
   level: document.querySelector("#level"),
   hp: document.querySelector("#hp"),
   xp: document.querySelector("#xp"),
+  score: document.querySelector("#score"),
   str: document.querySelector("#str"),
   agi: document.querySelector("#agi"),
   will: document.querySelector("#will"),
@@ -1094,6 +1095,7 @@ function renderUi() {
   els.level.textContent = hero.level;
   els.hp.textContent = `${hero.hp}/${hero.maxHp}`;
   els.xp.textContent = `${hero.xp}/${hero.nextXp}`;
+  els.score.textContent = scoreRun().toLocaleString();
   els.str.textContent = `${hero.str} (+${gearBonus(hero, "attack")} atk)`;
   els.agi.textContent = hero.agi;
   els.will.textContent = `${heroWill(hero)} (+${gearBonus(hero, "defense")} def)`;

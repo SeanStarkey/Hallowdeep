@@ -238,6 +238,16 @@ canvas {
   border-bottom: 0;
 }
 
+.stats div:nth-child(3),
+.stats div:nth-child(4) {
+  border-bottom: 1px solid var(--line);
+}
+
+.stats .wide {
+  grid-column: 1 / -1;
+  border-right: 0;
+}
+
 .stats span,
 .attributes span,
 .equipment span,

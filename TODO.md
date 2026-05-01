@@ -11,7 +11,6 @@
 - Add boss floors every few depths with unique monsters and score bonuses.
 - Add a win condition or final depth instead of endless descent.
 - Add more attributes to the character.
-- Add a display of the score.
 - Add a crafting ability.
 - Add a light source, making the spotlight different sizes based on what you have.
 
