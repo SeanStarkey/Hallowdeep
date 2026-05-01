@@ -27,6 +27,9 @@ const els = {
   log: document.querySelector("#log"),
   potion: document.querySelector("#drink-potion"),
   waitActions: document.querySelectorAll("[data-wait]"),
+  helpOpen: document.querySelector("#help-open"),
+  helpClose: document.querySelector("#help-close"),
+  helpModal: document.querySelector("#help-modal"),
   roadmapOpen: document.querySelector("#roadmap-open"),
   roadmapClose: document.querySelector("#roadmap-close"),
   roadmapModal: document.querySelector("#roadmap-modal"),
@@ -516,6 +519,22 @@ function closeRoadmap() {
   els.roadmapModal.classList.add("hidden");
 }
 
+function openHelp() {
+  els.helpModal.classList.remove("hidden");
+}
+
+function closeHelp() {
+  els.helpModal.classList.add("hidden");
+}
+
+function closeOpenDialogs() {
+  closeRoadmap();
+  closeHelp();
+}
+
+function hasOpenDialog() {
+  return !els.roadmapModal.classList.contains("hidden") || !els.helpModal.classList.contains("hidden");
+}
 
 function scoreRun() {
   const hero = state.hero;
@@ -1042,8 +1061,16 @@ function render() {
 window.addEventListener("keydown", (event) => {
   if (event.target instanceof HTMLInputElement) return;
 
-  if (event.key === "Escape" && !els.roadmapModal.classList.contains("hidden")) {
-    closeRoadmap();
+  if (event.key === "Escape" && hasOpenDialog()) {
+    closeOpenDialogs();
+    return;
+  }
+
+  if (hasOpenDialog()) return;
+
+  if (event.key === "?") {
+    event.preventDefault();
+    openHelp();
     return;
   }
 
@@ -1113,6 +1140,11 @@ document.querySelectorAll("[data-move]").forEach((button) => {
 els.heroName.addEventListener("change", () => setPlayerName(els.heroName.value));
 els.heroName.addEventListener("keydown", (event) => {
   if (event.key === "Enter") els.heroName.blur();
+});
+els.helpOpen.addEventListener("click", openHelp);
+els.helpClose.addEventListener("click", closeHelp);
+els.helpModal.addEventListener("click", (event) => {
+  if (event.target === els.helpModal) closeHelp();
 });
 els.roadmapOpen.addEventListener("click", openRoadmap);
 els.roadmapClose.addEventListener("click", closeRoadmap);

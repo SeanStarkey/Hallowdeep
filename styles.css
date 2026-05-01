@@ -504,7 +504,8 @@ canvas {
   border-bottom: 1px solid var(--line);
 }
 
-.roadmap-content {
+.roadmap-content,
+.help-content {
   max-height: calc(min(42rem, 100vh - 2rem) - 5.5rem);
   overflow: auto;
   padding: 1rem 1.25rem 1.25rem;
@@ -533,6 +534,77 @@ canvas {
   color: var(--gold);
 }
 
+.help-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.help-content section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.help-content h3,
+.help-content p {
+  margin-bottom: 0;
+}
+
+.help-content ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.help-content li::marker {
+  color: var(--gold);
+}
+
+.key-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 0.75rem;
+  margin: 0;
+}
+
+.key-list div {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, auto) 1fr;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.key-list dt {
+  display: inline-flex;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.25rem 0.45rem;
+  background: #22251f;
+  color: var(--ink);
+  font: 800 0.8rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap;
+}
+
+.key-list dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.legend-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  padding-left: 0;
+}
+
+.legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .roadmap-content code {
   color: var(--ink);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -555,6 +627,11 @@ canvas {
 
   .top-actions {
     gap: 0.5rem;
+  }
+
+  .key-list,
+  .legend-list {
+    grid-template-columns: 1fr;
   }
 
   .mobile-controls {

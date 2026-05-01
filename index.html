@@ -15,6 +15,7 @@
           </div>
           <div class="top-actions">
             <span id="version" class="version">Version</span>
+            <button id="help-open" class="command secondary" type="button">Help</button>
             <button id="roadmap-open" class="command secondary" type="button">Roadmap</button>
             <button id="new-game" class="command" type="button">New Run</button>
           </div>
@@ -123,9 +124,70 @@
             <p class="label">Upcoming Features</p>
             <h2 id="roadmap-title">Roadmap</h2>
           </div>
-          <button id="roadmap-close" class="icon-command" type="button" title="Close roadmap">x</button>
+          <button id="roadmap-close" class="icon-command" type="button" title="Close roadmap" aria-label="Close roadmap">x</button>
         </div>
         <div id="roadmap-content" class="roadmap-content">Loading roadmap...</div>
+      </section>
+    </div>
+
+    <div id="help-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <section class="modal-panel">
+        <div class="modal-header">
+          <div>
+            <p class="label">Quick Reference</p>
+            <h2 id="help-title">Help</h2>
+          </div>
+          <button id="help-close" class="icon-command" type="button" title="Close help" aria-label="Close help">x</button>
+        </div>
+        <div class="help-content">
+          <section>
+            <h3>Goal</h3>
+            <p>Explore each floor, gather stronger gear, survive the denizens of Hallowdeep, and descend when you find the stairs. Your run score grows from XP, kills, depth, and level.</p>
+          </section>
+
+          <section>
+            <h3>Keyboard</h3>
+            <dl class="key-list">
+              <div><dt>Arrows</dt><dd>Move or attack</dd></div>
+              <div><dt>W A S D</dt><dd>Move or attack</dd></div>
+              <div><dt>H J K L</dt><dd>Move or attack</dd></div>
+              <div><dt>.</dt><dd>Wait a turn</dd></div>
+              <div><dt>R</dt><dd>Rest for one turn</dd></div>
+              <div><dt>Space</dt><dd>Drink a pumpkin tonic</dd></div>
+              <div><dt>P</dt><dd>Drink a pumpkin tonic</dd></div>
+              <div><dt>X</dt><dd>Examine your tile</dd></div>
+              <div><dt>M</dt><dd>Toggle the minimap</dd></div>
+              <div><dt>?</dt><dd>Open this help</dd></div>
+              <div><dt>Esc</dt><dd>Close open dialogs</dd></div>
+            </dl>
+          </section>
+
+          <section>
+            <h3>Mouse And Touch</h3>
+            <p>Hover or tap the dungeon to examine a tile. On small screens, use the direction buttons below the map and the inventory buttons for waiting or drinking tonics.</p>
+          </section>
+
+          <section>
+            <h3>Map Legend</h3>
+            <ul class="legend-list">
+              <li><span class="tile hero"></span> Adventurer</li>
+              <li><span class="tile enemy"></span> Monster</li>
+              <li><span class="tile stairs"></span> Stairs down</li>
+              <li><span class="tile tonic"></span> Pumpkin tonic</li>
+              <li><span class="tile gear"></span> Equipment</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Tips</h3>
+            <ul>
+              <li>Moving into a monster attacks it; monsters act after your turn.</li>
+              <li>Equipment is picked up automatically when you step on it.</li>
+              <li>Status effects fade over turns, but waiting still gives nearby monsters a chance to act.</li>
+              <li>Use the examine panel to check monster abilities before committing to a fight.</li>
+            </ul>
+          </section>
+        </div>
       </section>
     </div>
 
