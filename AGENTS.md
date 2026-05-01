@@ -55,3 +55,5 @@ Core files:
 - Read nearby code before editing, and follow existing patterns.
 - Summarize changed behavior and verification steps when finishing work.
 - If tests cannot be run because none exist, say so and describe the manual check used instead.
+- When Codex makes code changes and is asked to create a git commit, include `Co-authored-by: Codex <codex@openai.com>` in the commit message.
+- Do not add the Codex co-author trailer for commits that only contain user-authored work or by other AIs.
