@@ -1,5 +1,8 @@
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
+const minimapCanvas = document.querySelector("#minimap");
+const minimapCtx = minimapCanvas.getContext("2d");
+const minimapSection = document.querySelector("#minimap-section");
 
 const els = {
   heroName: document.querySelector("#hero-name"),
@@ -33,8 +36,8 @@ const els = {
 
 const VIEW_W = 48;
 const VIEW_H = 32;
-const W = 96;
-const H = 64;
+let W = 96;
+let H = 64;
 const TILE = 20;
 const FLOOR = ".";
 const WALL = "#";
@@ -289,7 +292,8 @@ function makeMap() {
   const map = Array.from({ length: H }, () => Array.from({ length: W }, () => WALL));
   const rooms = [];
 
-  for (let i = 0; i < 190; i++) {
+  const roomAttempts = Math.round(190 * (W * H) / (96 * 64));
+  for (let i = 0; i < roomAttempts; i++) {
     const rw = 6 + rand(10);
     const rh = 4 + rand(8);
     const rx = 1 + rand(W - rw - 2);
@@ -387,6 +391,8 @@ function equipmentForDepth(depth) {
 
 
 function placeLevel(depth, hero) {
+  W = 80 + rand(81);
+  H = 56 + rand(41);
   const { map, rooms } = makeMap();
   const start = rooms[0] || { x: 1, y: 1, w: 5, h: 5, cx: 2, cy: 2 };
   hero.x = start.cx;
@@ -441,6 +447,7 @@ function placeLevel(depth, hero) {
   state.tonics = tonics;
   state.equipment = equipment;
   state.depth = depth;
+  state.visited = Array.from({ length: H }, () => new Uint8Array(W));
 }
 
 async function loadScores() {
@@ -919,6 +926,7 @@ function renderMap() {
   for (let y = camera.y; y < camera.y + VIEW_H; y++) {
     for (let x = camera.x; x < camera.x + VIEW_W; x++) {
       const seen = visible(x, y);
+      if (seen) state.visited[y][x] = 1;
       const tile = state.map[y][x];
       const base = tile === WALL ? "#3f3a2d" : "#20271f";
       drawTile(x, y, seen ? base : "#080908");
@@ -969,6 +977,32 @@ function renderMap() {
   }
 }
 
+function renderMinimap() {
+  if (!state.visited) return;
+  const scale = 2;
+  minimapCanvas.width = W * scale;
+  minimapCanvas.height = H * scale;
+
+  minimapCtx.fillStyle = "#0b0c0a";
+  minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (!state.visited[y][x]) continue;
+      const tile = state.map[y][x];
+      minimapCtx.fillStyle = tile === WALL ? "#4a4030" : tile === STAIRS ? "#e8a030" : "#1e2a1c";
+      minimapCtx.fillRect(x * scale, y * scale, scale, scale);
+    }
+  }
+
+  minimapCtx.strokeStyle = "rgba(255,255,255,0.2)";
+  minimapCtx.lineWidth = 1;
+  minimapCtx.strokeRect(camera.x * scale + 0.5, camera.y * scale + 0.5, VIEW_W * scale, VIEW_H * scale);
+
+  minimapCtx.fillStyle = "#f4ecd8";
+  minimapCtx.fillRect(state.hero.x * scale - 1, state.hero.y * scale - 1, 3, 3);
+}
+
 function renderUi() {
   const hero = state.hero;
   els.version.textContent = VERSION;
@@ -1001,6 +1035,7 @@ function renderUi() {
 
 function render() {
   renderMap();
+  renderMinimap();
   renderUi();
 }
 
@@ -1026,6 +1061,12 @@ window.addEventListener("keydown", (event) => {
     a: [-1, 0],
     d: [1, 0]
   };
+
+  if (event.key.toLowerCase() === "m") {
+    event.preventDefault();
+    minimapSection.classList.toggle("hidden");
+    return;
+  }
 
   if (event.key.toLowerCase() === "x") {
     event.preventDefault();

@@ -170,6 +170,21 @@ canvas {
   image-rendering: pixelated;
 }
 
+.minimap-section {
+  margin-top: 0.5rem;
+}
+
+.minimap-section.hidden {
+  display: none;
+}
+
+#minimap {
+  aspect-ratio: auto;
+  width: min(100%, 320px);
+  height: auto;
+  box-shadow: none;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
