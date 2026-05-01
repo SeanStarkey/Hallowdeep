@@ -14,6 +14,13 @@
 - Add a crafting ability.
 - Add a light source, making the spotlight different sizes based on what you have.
 - Add a quest system.
+- Add unidentified items that drop with unknown names and reveal on use or examination.
+- Add level-up choices: offer the player two or three minor perks instead of automatic stat increments.
+- Add cursed items with hidden penalties, removable only by a specific consumable.
+- Add secret rooms reachable through hidden passages or breakable walls.
+- Add a flee mechanic to escape combat at the cost of a parting attack from the monster.
+- Add monster turn telegraphing to show intended movement before the monster acts.
+- Add difficulty modes (e.g., Normal, Cursed, Nightmare) that adjust monster scaling or player HP at run start.
 
 ## Balance
 
@@ -28,6 +35,18 @@
 - Add a minimap or explored-area indicator for large scrolling floors.
 - Add hit flashes, damage numbers, and death effects.
 - Improve mobile controls with diagonal movement or tap-to-move.
+- Add a death screen showing depth, kills by monster type, gear held at death, and score before the new-run prompt.
+- Add a full Chronicle scroll or log viewer so older entries are not lost when the panel fills.
+- Add keyboard rebinding stored in localStorage for non-QWERTY layouts and personal preference.
+- Add a first-run contextual hint (checked in localStorage) explaining movement and the goal.
+
+## Persistence And Replayability
+
+- Add mid-run save to localStorage so closing the tab does not lose an active run.
+- Add a run history (graveyard) in localStorage showing the last N runs with depth, score, cause of death, and gear.
+- Add personal best tracking in localStorage, separate from the shared leaderboard.
+- Add seed-based runs so players can enter a seed string for a deterministic dungeon.
+- Add a daily seed: one shared seed per day giving every player the same dungeon.
 
 ## Art And Audio
 
@@ -41,8 +60,11 @@
 
 - Add a health check endpoint for the score server.
 - Add basic rate limiting or validation hardening for score submissions.
+- Add a score submission auth token (env-var shared secret) checked on POST and DELETE to prevent casual manipulation.
 - Add backup instructions for `data/high-scores.json`.
 - Add deployment notes for updating NGINX and restarting the Node service.
+- Add security headers to server responses: Content-Security-Policy, X-Content-Type-Options, and X-Frame-Options.
+- Add a PWA manifest and minimal service worker for offline caching and home screen installation.
 
 ## Code Quality
 
