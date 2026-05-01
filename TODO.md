@@ -46,7 +46,6 @@
 
 ## Code Quality
 
-- Split `game.js` into modules once the browser/deploy setup supports it cleanly.
 - Add lightweight tests for score sorting, item scaling, and ability hooks.
 - Add a debug mode for spawning specific monsters/items during balancing.
 - Remove unused monster `glyph` fields if sprite rendering fully replaces glyphs.

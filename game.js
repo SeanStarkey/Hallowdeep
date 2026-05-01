@@ -45,31 +45,14 @@ const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
 
-const emptyWeapon = { name: "Bare Hands", slot: "weapon", attack: 0, defense: 0, will: 0, light: 0, tier: 0 };
-const emptyCharm = { name: "None", slot: "charm", attack: 0, defense: 0, will: 0, light: 0, tier: 0 };
-
-const equipmentBook = [
-  { name: "Rusty Dagger", slot: "weapon", attack: 1, defense: 0, will: 0, light: 0, minDepth: 1, tier: 1 },
-  { name: "Graveyard Shovel", slot: "weapon", attack: 2, defense: 1, will: 0, light: 0, minDepth: 2, tier: 2 },
-  { name: "Silver Hatchet", slot: "weapon", attack: 4, defense: 0, will: 0, light: 0, minDepth: 4, tier: 3 },
-  { name: "Blessed Lantern Hook", slot: "weapon", attack: 5, defense: 0, will: 1, light: 1, minDepth: 6, tier: 4 },
-  { name: "Garlic Braid", slot: "charm", attack: 0, defense: 1, will: 1, light: 0, minDepth: 1, tier: 1 },
-  { name: "Moth-Eaten Cloak", slot: "charm", attack: 0, defense: 2, will: 0, light: 0, minDepth: 2, tier: 2 },
-  { name: "Iron Ring", slot: "charm", attack: 0, defense: 2, will: 1, light: 0, minDepth: 3, tier: 3 },
-  { name: "Saint Medal", slot: "charm", attack: 0, defense: 1, will: 2, light: 1, minDepth: 5, tier: 4 },
-  { name: "Witchglass Lens", slot: "charm", attack: 0, defense: 0, will: 2, light: 2, minDepth: 7, tier: 5 }
-];
-
-const monsterBook = [
-  { name: "Salem Shade", glyph: "S", hp: 7, atk: 2, xp: 4, minDepth: 1, color: "#9f8bd3", ability: "blink" },
-  { name: "Banshee", glyph: "B", hp: 8, atk: 3, xp: 5, minDepth: 1, color: "#b7d7d8", ability: "scream" },
-  { name: "Cursed Mummy", glyph: "M", hp: 11, atk: 4, xp: 7, minDepth: 2, color: "#c9b073", ability: "curse" },
-  { name: "Plague Doctor", glyph: "P", hp: 12, atk: 4, xp: 8, minDepth: 3, color: "#7f9f72", ability: "poison" },
-  { name: "Carpathian Vampire", glyph: "V", hp: 14, atk: 5, xp: 10, minDepth: 4, color: "#cf4f55", ability: "drain" },
-  { name: "Jersey Devil", glyph: "J", hp: 16, atk: 6, xp: 12, minDepth: 5, color: "#d65f49", ability: "hunter" },
-  { name: "Headless Horseman", glyph: "H", hp: 18, atk: 7, xp: 14, minDepth: 6, color: "#d98635", ability: "charge" },
-  { name: "Wendigo", glyph: "W", hp: 22, atk: 8, xp: 18, minDepth: 8, color: "#d9d0ba", ability: "ravenous" }
-];
+const {
+  emptyCharm,
+  emptyWeapon,
+  equipmentBook,
+  monsterBook,
+  spritePalettes,
+  spritePatterns
+} = window.HallowdeepData;
 
 let state;
 let playerName = loadPlayerName();
@@ -77,129 +60,6 @@ let highScores = [];
 let scoreStatus = "Loading shared scores...";
 let examineText = "Nothing examined.";
 let camera = { x: 0, y: 0 };
-
-const spritePalettes = {
-  hero: { a: "#e2b04f", b: "#f4ecd8", c: "#7f4f2c", d: "#2f2416" },
-  stairs: { a: "#8a6fb0", b: "#cbb7f1", c: "#4b3c64" },
-  tonic: { a: "#79a56f", b: "#e2b04f", c: "#f4ecd8", d: "#5a3a1d" },
-  gear: { a: "#d9d0ba", b: "#7d7767", c: "#e2b04f" },
-  shade: { a: "#9f8bd3", b: "#d9d0ff", c: "#4d3e75" },
-  banshee: { a: "#b7d7d8", b: "#eefcff", c: "#5c7a83" },
-  mummy: { a: "#c9b073", b: "#f0dfaa", c: "#6b5a35" },
-  plague: { a: "#7f9f72", b: "#d4e6b7", c: "#2c3729" },
-  vampire: { a: "#cf4f55", b: "#f4ecd8", c: "#2c1720" },
-  devil: { a: "#d65f49", b: "#f0aa6c", c: "#4b1f1d" },
-  horseman: { a: "#d98635", b: "#f3c179", c: "#39261b" },
-  wendigo: { a: "#d9d0ba", b: "#ffffff", c: "#4a4740" }
-};
-
-const spritePatterns = {
-  hero: [
-    "....aaaa....",
-    "...aaaaaa...",
-    "...abbaaa...",
-    "..abbbba...",
-    "..aaabba...",
-    "...cccc....",
-    "..cccccc...",
-    ".cccdcccc..",
-    "...c..c....",
-    "..cc..cc..."
-  ],
-  stairs: [
-    "..........",
-    ".......aaa",
-    ".....aaaac",
-    "...aaaaccc",
-    ".aaaaccccc",
-    "aaaccccccc",
-    "cccccccccc"
-  ],
-  tonic: [
-    "....bb....",
-    "...bbbb...",
-    "...dddd...",
-    "..daaaad..",
-    ".daacaad.",
-    ".daaaaad.",
-    "..dddddd.."
-  ],
-  gear: [
-    "...aa...",
-    "..abba..",
-    ".abccba.",
-    ".acbbca.",
-    ".abccba.",
-    "..abba..",
-    "...aa..."
-  ],
-  shade: [
-    "...aaaa...",
-    "..aaaaaa..",
-    ".aaabbaaa.",
-    ".aaaaaaa..",
-    "..aaaacc..",
-    "...aaaa...",
-    "..aa..aa.."
-  ],
-  banshee: [
-    "...bbbb...",
-    "..baaaab..",
-    ".baabbaab.",
-    ".baaaaab..",
-    "..baaaab..",
-    "...b..b..."
-  ],
-  mummy: [
-    "..bbbbbb..",
-    ".baaaaab.",
-    ".abababa.",
-    ".baaaaab.",
-    "..ababab.",
-    ".baaaaab.",
-    "..bb..bb."
-  ],
-  plague: [
-    "...aaaa...",
-    "..acccca..",
-    ".acbbbca.",
-    ".acbbcca.",
-    "..accca..",
-    "...ccc..."
-  ],
-  vampire: [
-    "...cccc...",
-    "..caaaac..",
-    ".cabbabac.",
-    ".caaaaca..",
-    "..caaac...",
-    "...cc....."
-  ],
-  devil: [
-    ".c....c.",
-    ".ac..ca.",
-    ".aaaaaa.",
-    "aabbabaa",
-    ".aaaaaa.",
-    "..a..a.."
-  ],
-  horseman: [
-    "...bb....",
-    "..baab...",
-    ".baaaab..",
-    "..cccc...",
-    ".caaaaac.",
-    ".cc..cc.."
-  ],
-  wendigo: [
-    ".c....c.",
-    "..cbbc..",
-    "..baab..",
-    ".baaaab.",
-    ".acccca.",
-    "..a..a.."
-  ]
-};
 
 const abilityDefinitions = {
   blink: {
