@@ -25,7 +25,6 @@
 
 - Add an on-screen control reference outside the game canvas or in a pause/help modal.
 - Add a minimap or explored-area indicator for large scrolling floors.
-- Add visual status indicators for poison, dread, and curse.
 - Add hit flashes, damage numbers, and death effects.
 - Improve mobile controls with diagonal movement or tap-to-move.
 
