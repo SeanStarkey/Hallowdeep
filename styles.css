@@ -453,7 +453,7 @@ canvas {
 
 .log ol {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 0.4rem;
   max-height: 18rem;
   margin: 0;
