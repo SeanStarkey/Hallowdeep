@@ -182,7 +182,6 @@ canvas {
 .attributes,
 .inventory,
 .equipment,
-.legend,
 .scores,
 .examine,
 .log {
@@ -251,7 +250,6 @@ canvas {
 .stats span,
 .attributes span,
 .equipment span,
-.legend div,
 .inventory p,
 .examine p,
 .scores li,
@@ -270,7 +268,6 @@ canvas {
 .attributes,
 .inventory,
 .equipment,
-.legend,
 .scores,
 .examine,
 .log {
@@ -301,22 +298,6 @@ canvas {
 
 .inventory p {
   margin-bottom: 0;
-}
-
-.legend {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem 0.75rem;
-}
-
-.legend h3 {
-  grid-column: 1 / -1;
-}
-
-.legend div {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
 }
 
 .tile {
