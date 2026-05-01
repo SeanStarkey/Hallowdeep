@@ -25,6 +25,7 @@
         <div class="mobile-controls" aria-label="Movement controls">
           <button type="button" data-move="0,-1">N</button>
           <button type="button" data-move="-1,0">W</button>
+          <button data-wait type="button" title="Wait a turn" aria-label="Wait a turn">.</button>
           <button type="button" data-move="1,0">E</button>
           <button type="button" data-move="0,1">S</button>
         </div>
@@ -68,7 +69,10 @@
         <section class="inventory" aria-label="Inventory">
           <div class="section-title">
             <h3>Inventory</h3>
-            <button id="drink-potion" class="icon-command" type="button" title="Drink potion">+</button>
+            <div class="section-actions">
+              <button data-wait type="button" class="icon-command" title="Wait a turn" aria-label="Wait a turn">.</button>
+              <button id="drink-potion" class="icon-command" type="button" title="Drink potion">+</button>
+            </div>
           </div>
           <p id="inventory-text">2 pumpkin tonics</p>
         </section>

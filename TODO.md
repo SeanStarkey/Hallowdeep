@@ -6,7 +6,6 @@
 - Add ranged weapons for the character.
 - Add ranged or area abilities for late-depth monsters.
 - Add themed dungeon features such as locked doors, coffins, altars, traps, and shrines.
-- Add a rest/wait action so players can skip a turn tactically.
 - Add a proper inventory screen with item choices instead of auto-equipping only stronger gear.
 - Add consumables beyond pumpkin tonics, such as holy water, salt circles, and lantern oil.
 - Add boss floors every few depths with unique monsters and score bonuses.
@@ -14,6 +13,7 @@
 - Add more attributes to the character.
 - Add a display of the score.
 - Add a crafting ability.
+- Add a light source, making the spotlight different sizes based on what you have.
 
 ## Balance
 

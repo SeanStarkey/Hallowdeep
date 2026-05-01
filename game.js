@@ -21,6 +21,7 @@ const els = {
   clearScores: document.querySelector("#clear-scores"),
   log: document.querySelector("#log"),
   potion: document.querySelector("#drink-potion"),
+  waitActions: document.querySelectorAll("[data-wait]"),
   roadmapOpen: document.querySelector("#roadmap-open"),
   roadmapClose: document.querySelector("#roadmap-close"),
   roadmapModal: document.querySelector("#roadmap-modal"),
@@ -807,6 +808,16 @@ function moveHero(dx, dy) {
     collectOrDescend();
   }
 
+  spendHeroTurn();
+}
+
+function waitHero() {
+  if (state.over) return;
+  addLog("You hold your ground.");
+  spendHeroTurn();
+}
+
+function spendHeroTurn() {
   if (!state.over) {
     tickHeroStatuses();
   }
@@ -1144,6 +1155,12 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (event.key === "." || event.key.toLowerCase() === "r") {
+    event.preventDefault();
+    waitHero();
+    return;
+  }
+
   const dir = dirs[event.key];
   if (dir) {
     event.preventDefault();
@@ -1178,6 +1195,7 @@ els.roadmapModal.addEventListener("click", (event) => {
   if (event.target === els.roadmapModal) closeRoadmap();
 });
 els.potion.addEventListener("click", drinkPotion);
+els.waitActions.forEach((button) => button.addEventListener("click", waitHero));
 els.clearScores.addEventListener("click", clearScores);
 els.newGame.addEventListener("click", newGame);
 
