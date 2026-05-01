@@ -18,18 +18,52 @@ The static game files can be served by NGINX, but the shared high-score list nee
 /var/www/seanstarkey.dev/public/Hallowdeep/data/high-scores.json
 ```
 
-## Run The Score Server
+## Run The Score Server With systemd
 
-From the game directory:
+Install the service file:
 
 ```bash
-cd /var/www/seanstarkey.dev/public/Hallowdeep
-npm start
+sudo cp /var/www/seanstarkey.dev/public/Hallowdeep/deploy/systemd/hallowdeep.service /etc/systemd/system/hallowdeep.service
 ```
 
-By default, the Node server listens on port `3000`.
+Make sure `www-data` can write the score file:
 
-Keep it running with your preferred process manager, such as `systemd` or `pm2`.
+```bash
+sudo mkdir -p /var/www/seanstarkey.dev/public/Hallowdeep/data
+sudo touch /var/www/seanstarkey.dev/public/Hallowdeep/data/high-scores.json
+sudo chown -R www-data:www-data /var/www/seanstarkey.dev/public/Hallowdeep/data
+sudo chmod 775 /var/www/seanstarkey.dev/public/Hallowdeep/data
+sudo chmod 664 /var/www/seanstarkey.dev/public/Hallowdeep/data/high-scores.json
+```
+
+If `high-scores.json` is empty, initialize it:
+
+```bash
+echo '[]' | sudo tee /var/www/seanstarkey.dev/public/Hallowdeep/data/high-scores.json
+sudo chown www-data:www-data /var/www/seanstarkey.dev/public/Hallowdeep/data/high-scores.json
+```
+
+Enable and start the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now hallowdeep
+sudo systemctl status hallowdeep
+```
+
+By default, the Node server listens on port `3000` as `www-data`.
+
+After deploying changes to `server.js`, restart it:
+
+```bash
+sudo systemctl restart hallowdeep
+```
+
+Watch logs:
+
+```bash
+sudo journalctl -u hallowdeep -f
+```
 
 ## Copy Files Into Place
 
@@ -52,6 +86,8 @@ If the target directory needs a specific owner, pass it with `HALLOWDEEP_DEPLOY_
 ```bash
 HALLOWDEEP_DEPLOY_OWNER=www-data:www-data npm run deploy
 ```
+
+On the Linux server, the deployed `data` directory should remain owned by `www-data` so the score service can write to it.
 
 If you need to deploy somewhere else temporarily, override `HALLOWDEEP_DEPLOY_DIR`:
 

@@ -40,7 +40,6 @@
 
 ## Persistence And Deployment
 
-- Add a systemd service file example for `server.js`.
 - Add a health check endpoint for the score server.
 - Add basic rate limiting or validation hardening for score submissions.
 - Add backup instructions for `data/high-scores.json`.
