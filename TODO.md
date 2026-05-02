@@ -31,13 +31,13 @@
 
 ## UI
 
-- Add an on-screen control reference outside the game canvas or in a pause/help modal.
 - Add hit flashes, damage numbers, and death effects.
 - Improve mobile controls with diagonal movement or tap-to-move.
 - Add a death screen showing depth, kills by monster type, gear held at death, and score before the new-run prompt.
 - Add a full Chronicle scroll or log viewer so older entries are not lost when the panel fills.
 - Add keyboard rebinding stored in localStorage for non-QWERTY layouts and personal preference.
 - Add a first-run contextual hint (checked in localStorage) explaining movement and the goal.
+- Prompt user to change their name if it is the default at game start.
 
 ## Persistence And Replayability
 
