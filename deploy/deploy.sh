@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TARGET_DIR="${HALLOWDEEP_DEPLOY_DIR:-/var/www/seanstarkey.dev/public/Hallowdeep}"
-OWNER_GROUP="${HALLOWDEEP_DEPLOY_OWNER:-www-data:www-data}"
+OWNER_GROUP="www-data:www-data"
 
 if ! command -v rsync >/dev/null 2>&1; then
   echo "rsync is required for deployment." >&2

@@ -137,7 +137,7 @@ async function serveStatic(req, res) {
   try {
     const content = await fs.readFile(filePath);
     const type = MIME[path.extname(filePath)] || "application/octet-stream";
-    res.writeHead(200, { "Content-Type": type });
+    res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
     res.end(content);
   } catch {
     res.writeHead(404);
