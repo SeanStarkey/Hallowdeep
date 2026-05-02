@@ -519,6 +519,146 @@ canvas {
   color: var(--muted);
 }
 
+.death-panel {
+  width: min(42rem, 100%);
+}
+
+.death-content {
+  display: grid;
+  gap: 1rem;
+  max-height: calc(min(42rem, 100vh - 2rem) - 9.5rem);
+  overflow: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.death-score {
+  display: grid;
+  gap: 0.35rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.death-score span,
+.death-stats span,
+.death-loadout span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.death-score strong {
+  color: var(--gold);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.4rem, 11vw, 4.5rem);
+  line-height: 0.9;
+}
+
+.death-score p,
+.death-empty {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.death-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #151712;
+}
+
+.death-stats div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border-right: 1px solid var(--line);
+}
+
+.death-stats div:last-child {
+  border-right: 0;
+}
+
+.death-stats b {
+  color: var(--ink);
+  font-size: 1.15rem;
+}
+
+.death-loadout,
+.death-breakdown {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.death-loadout h3,
+.death-breakdown h3 {
+  margin-bottom: 0;
+}
+
+.death-loadout div {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) 1fr;
+  gap: 0.2rem 0.75rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #22251f;
+}
+
+.death-loadout b,
+.death-loadout small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.death-loadout b {
+  color: var(--ink);
+}
+
+.death-loadout small {
+  grid-column: 2;
+  color: var(--muted);
+}
+
+.death-kills {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.death-kills li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #22251f;
+}
+
+.death-kills span {
+  min-width: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.death-kills b {
+  color: var(--ink);
+}
+
+.death-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-top: 1px solid var(--line);
+}
+
 .roadmap-content h2 {
   margin: 1.1rem 0 0.5rem;
   color: var(--gold);
@@ -639,6 +779,26 @@ canvas {
   .key-list,
   .legend-list {
     grid-template-columns: 1fr;
+  }
+
+  .death-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .death-stats div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .death-stats div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .death-actions {
+    flex-direction: column-reverse;
+  }
+
+  .death-actions .command {
+    width: 100%;
   }
 
   .mobile-controls {

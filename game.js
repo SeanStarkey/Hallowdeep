@@ -33,6 +33,11 @@ const els = {
   roadmapClose: document.querySelector("#roadmap-close"),
   roadmapModal: document.querySelector("#roadmap-modal"),
   roadmapContent: document.querySelector("#roadmap-content"),
+  deathModal: document.querySelector("#death-modal"),
+  deathContent: document.querySelector("#death-content"),
+  deathClose: document.querySelector("#death-close"),
+  deathReview: document.querySelector("#death-review"),
+  deathNewRun: document.querySelector("#death-new-run"),
   newGame: document.querySelector("#new-game")
 };
 
@@ -568,29 +573,43 @@ function closeHelp() {
   els.helpModal.classList.add("hidden");
 }
 
+function openDeathScreen() {
+  els.deathContent.innerHTML = deathScreenHtml();
+  els.deathModal.classList.remove("hidden");
+}
+
+function closeDeathScreen() {
+  els.deathModal.classList.add("hidden");
+}
+
 function closeOpenDialogs() {
   closeRoadmap();
   closeHelp();
+  closeDeathScreen();
 }
 
 function hasOpenDialog() {
-  return !els.roadmapModal.classList.contains("hidden") || !els.helpModal.classList.contains("hidden");
+  return !els.roadmapModal.classList.contains("hidden") || !els.helpModal.classList.contains("hidden") || !els.deathModal.classList.contains("hidden");
+}
+
+function scoreRunFor(runState) {
+  const hero = runState.hero;
+  return hero.totalXp + hero.kills * 10 + (runState.depth - 1) * 75 + (hero.level - 1) * 50;
 }
 
 function scoreRun() {
-  const hero = state.hero;
-  return hero.totalXp + hero.kills * 10 + (state.depth - 1) * 75 + (hero.level - 1) * 50;
+  return scoreRunFor(state);
 }
 
-async function recordScore() {
-  if (state.scored) return;
-  state.scored = true;
-  const hero = state.hero;
+async function recordScore(runState = state) {
+  if (runState.scored) return;
+  runState.scored = true;
+  const hero = runState.hero;
   setPlayerName(els.heroName.value);
   const score = {
     name: playerName,
-    score: scoreRun(),
-    depth: state.depth,
+    score: scoreRunFor(runState),
+    depth: runState.depth,
     level: hero.level,
     kills: hero.kills
   };
@@ -605,10 +624,10 @@ async function recordScore() {
     const data = await response.json();
     highScores = Array.isArray(data.scores) ? data.scores.slice(0, MAX_SCORES) : [];
     scoreStatus = highScores.length ? "" : "No fallen adventurers yet.";
-    addLog(`Score recorded: ${score.score}.`, "good");
+    if (state === runState) addLog(`Score recorded: ${score.score}.`, "good");
   } catch {
     scoreStatus = "Could not save shared score.";
-    addLog("The shared scorebook could not be reached.", "danger");
+    if (state === runState) addLog("The shared scorebook could not be reached.", "danger");
   }
   renderUi();
 }
@@ -625,7 +644,59 @@ async function clearScores() {
   renderUi();
 }
 
+function killBreakdownHtml() {
+  const kills = Object.entries(state.killCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  if (!kills.length) {
+    return '<p class="death-empty">No monsters were slain.</p>';
+  }
+
+  return `<ol class="death-kills">${kills
+    .map(([name, count]) => `<li><span>${escapeHtml(name)}</span><b>${count}</b></li>`)
+    .join("")}</ol>`;
+}
+
+function deathScreenHtml() {
+  const hero = state.hero;
+  const score = scoreRun().toLocaleString();
+  const weapon = hero.equipment.weapon;
+  const charm = hero.equipment.charm;
+  const cause = state.deathCause || "The dungeon finished the tale.";
+
+  return `
+    <div class="death-score">
+      <span>Final Score</span>
+      <strong>${score}</strong>
+      <p>${escapeHtml(cause)}</p>
+    </div>
+    <div class="death-stats" aria-label="Run summary">
+      <div><span>Depth</span><b>${state.depth}</b></div>
+      <div><span>Level</span><b>${hero.level}</b></div>
+      <div><span>Total Kills</span><b>${hero.kills}</b></div>
+      <div><span>XP Earned</span><b>${hero.totalXp}</b></div>
+    </div>
+    <div class="death-loadout">
+      <h3>Gear At Death</h3>
+      <div><span>Weapon</span><b>${escapeHtml(weapon.name)}</b><small>${escapeHtml(itemStats(weapon))}</small></div>
+      <div><span>Charm</span><b>${escapeHtml(charm.name)}</b><small>${escapeHtml(itemStats(charm))}</small></div>
+    </div>
+    <div class="death-breakdown">
+      <h3>Kills By Monster</h3>
+      ${killBreakdownHtml()}
+    </div>
+  `;
+}
+
+function endRun(cause) {
+  if (state.over) return;
+  state.over = true;
+  state.deathCause = cause;
+  recordScore(state);
+  openDeathScreen();
+}
+
 function newGame() {
+  closeDeathScreen();
   state = {
     hero: makeHero(),
     map: [],
@@ -636,7 +707,9 @@ function newGame() {
     depth: 1,
     log: [],
     over: false,
-    scored: false
+    scored: false,
+    deathCause: "",
+    killCounts: {}
   };
   placeLevel(1, state.hero);
   addLog("You descend beneath the pumpkin fields.");
@@ -783,8 +856,7 @@ function tickHeroStatuses() {
     hero.hp = Math.max(0, hero.hp - 2);
     addLog("Poison burns for 2 HP.", "danger");
     if (hero.hp <= 0) {
-      state.over = true;
-      recordScore();
+      endRun("Poison finished the run.");
       addLog("The poison finishes the run.", "danger");
     }
   }
@@ -793,8 +865,7 @@ function tickHeroStatuses() {
     hero.hp = Math.max(0, hero.hp - 1);
     addLog("Flames scorch for 1 HP.", "danger");
     if (hero.hp <= 0) {
-      state.over = true;
-      recordScore();
+      endRun("Flames consumed the last of your strength.");
       addLog("The flames consume the last of your strength.", "danger");
     }
   }
@@ -822,6 +893,7 @@ function attack(attacker, defender) {
       } else {
         state.monsters = state.monsters.filter((m) => m !== defender);
         state.hero.kills += 1;
+        state.killCounts[defender.name] = (state.killCounts[defender.name] || 0) + 1;
         gainXp(defender.xp);
         addLog(`${defender.name} falls into dust.`, "good");
       }
@@ -835,8 +907,7 @@ function attack(attacker, defender) {
     }
     if (defender.hp <= 0) {
       defender.hp = 0;
-      state.over = true;
-      recordScore();
+      endRun(`${attacker.name} struck the final blow.`);
       addLog("Your lantern gutters out. The run is over.", "danger");
     }
   }
@@ -1215,6 +1286,9 @@ els.roadmapClose.addEventListener("click", closeRoadmap);
 els.roadmapModal.addEventListener("click", (event) => {
   if (event.target === els.roadmapModal) closeRoadmap();
 });
+els.deathClose.addEventListener("click", closeDeathScreen);
+els.deathReview.addEventListener("click", closeDeathScreen);
+els.deathNewRun.addEventListener("click", newGame);
 els.potion.addEventListener("click", drinkPotion);
 els.waitActions.forEach((button) => button.addEventListener("click", waitHero));
 els.newGame.addEventListener("click", newGame);
