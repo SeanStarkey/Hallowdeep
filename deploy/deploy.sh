@@ -25,6 +25,7 @@ rsync -av --delete \
   --exclude ".git/" \
   --exclude ".DS_Store" \
   --exclude "data/high-scores.json" \
+  --exclude ".claude/" \
   "${SOURCE_DIR}/" \
   "${TARGET_DIR}/"
 
