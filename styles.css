@@ -707,6 +707,13 @@ canvas {
   color: var(--gold);
 }
 
+.help-footer {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border, #444);
+  display: flex;
+  justify-content: flex-end;
+}
+
 .key-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

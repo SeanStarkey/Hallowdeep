@@ -50,7 +50,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.02";
+const VERSION = "2026.05.05.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
@@ -1281,7 +1281,7 @@ els.helpClose.addEventListener("click", closeHelp);
 els.helpModal.addEventListener("click", (event) => {
   if (event.target === els.helpModal) closeHelp();
 });
-els.roadmapOpen.addEventListener("click", openRoadmap);
+els.roadmapOpen.addEventListener("click", () => { closeHelp(); openRoadmap(); });
 els.roadmapClose.addEventListener("click", closeRoadmap);
 els.roadmapModal.addEventListener("click", (event) => {
   if (event.target === els.roadmapModal) closeRoadmap();
