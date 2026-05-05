@@ -773,14 +773,9 @@ canvas {
     padding-top: 0;
   }
 
-  .topbar,
-  .top-actions {
+  .topbar {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .top-actions {
-    gap: 0.5rem;
   }
 
   .key-list,
