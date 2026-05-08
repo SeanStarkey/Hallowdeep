@@ -15,7 +15,6 @@
 - Add a light source, making the spotlight different sizes based on what you have.
 - Add a quest system.
 - Add unidentified items that drop with unknown names and reveal on use or examination.
-- Add level-up choices: offer the player two or three minor perks instead of automatic stat increments.
 - Add cursed items with hidden penalties, removable only by a specific consumable.
 - Add secret rooms reachable through hidden passages or breakable walls.
 - Add a flee mechanic to escape combat at the cost of a parting attack from the monster.

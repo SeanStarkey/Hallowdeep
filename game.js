@@ -38,6 +38,8 @@ const els = {
   deathClose: document.querySelector("#death-close"),
   deathReview: document.querySelector("#death-review"),
   deathNewRun: document.querySelector("#death-new-run"),
+  levelupModal: document.querySelector("#levelup-modal"),
+  levelupContent: document.querySelector("#levelup-content"),
   newGame: document.querySelector("#new-game")
 };
 
@@ -50,7 +52,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.08.01";
+const VERSION = "2026.05.08.02";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
@@ -63,6 +65,19 @@ const {
   spritePalettes,
   spritePatterns
 } = window.HallowdeepData;
+
+const PERKS = [
+  { id: "ironConstitution", name: "Iron Constitution", desc: "+15 max HP. Restore to full." },
+  { id: "ruthlessStrike",   name: "Ruthless Strike",   desc: "+3 STR (attack power)." },
+  { id: "shadowstep",       name: "Shadowstep",        desc: "+3 AGI (defense)." },
+  { id: "ironWill",         name: "Iron Will",         desc: "+3 WILL (spirit and potion potency)." },
+  { id: "lanternKeeper",    name: "Lantern Keeper",    desc: "+3 light radius." },
+  { id: "tonicCache",       name: "Tonic Cache",       desc: "Gain 2 pumpkin tonics." },
+  { id: "warriorsBlood",    name: "Warrior's Blood",   desc: "+8 max HP and +1 STR." },
+  { id: "wardenEye",        name: "Warden's Eye",      desc: "+2 WILL and +2 light." },
+  { id: "combatant",        name: "Combatant",         desc: "+2 STR and +2 AGI." },
+  { id: "alchemist",        name: "Alchemist",         desc: "+1 tonic and +2 WILL." }
+];
 
 let state;
 let playerName = loadPlayerName();
@@ -591,7 +606,10 @@ function closeOpenDialogs() {
 }
 
 function hasOpenDialog() {
-  return !els.roadmapModal.classList.contains("hidden") || !els.helpModal.classList.contains("hidden") || !els.deathModal.classList.contains("hidden");
+  return !els.roadmapModal.classList.contains("hidden") ||
+    !els.helpModal.classList.contains("hidden") ||
+    !els.deathModal.classList.contains("hidden") ||
+    !els.levelupModal.classList.contains("hidden");
 }
 
 function scoreRunFor(runState) {
@@ -716,7 +734,8 @@ function newGame() {
     over: false,
     scored: false,
     deathCause: "",
-    killCounts: {}
+    killCounts: {},
+    levelUpQueue: []
   };
   placeLevel(1, state.hero);
   addLog("You descend beneath the pumpkin fields.");
@@ -934,10 +953,70 @@ function gainXp(amount) {
     hero.nextXp = Math.floor(hero.nextXp * 1.45);
     hero.maxHp += 5;
     hero.hp = hero.maxHp;
-    hero.str += hero.level % 2 === 0 ? 1 : 0;
-    hero.agi += hero.level % 2 === 1 ? 1 : 0;
-    hero.will += 1;
-    addLog(`Level ${hero.level}: your nerve hardens.`, "good");
+    addLog(`Level ${hero.level}! Choose your path.`, "good");
+    state.levelUpQueue.push(hero.level);
+  }
+  if (state.levelUpQueue.length > 0) {
+    openLevelUpModal();
+  }
+}
+
+function pickThreePerks() {
+  const pool = [...PERKS];
+  const chosen = [];
+  while (chosen.length < 3 && pool.length > 0) {
+    const i = Math.floor(Math.random() * pool.length);
+    chosen.push(pool.splice(i, 1)[0]);
+  }
+  return chosen;
+}
+
+function openLevelUpModal() {
+  const level = state.levelUpQueue[0];
+  const perks = pickThreePerks();
+  els.levelupContent.innerHTML = perks
+    .map(
+      (p) =>
+        `<button class="perk-card" type="button" data-perk="${p.id}">
+          <strong>${p.name}</strong>
+          <p>${p.desc}</p>
+        </button>`
+    )
+    .join("");
+  els.levelupContent.querySelectorAll(".perk-card").forEach((btn) => {
+    btn.addEventListener("click", () => applyPerk(btn.dataset.perk));
+  });
+  els.levelupModal.dataset.level = level;
+  els.levelupModal.classList.remove("hidden");
+  els.levelupContent.querySelector(".perk-card")?.focus();
+}
+
+function closeLevelUpModal() {
+  els.levelupModal.classList.add("hidden");
+}
+
+function applyPerk(id) {
+  const hero = state.hero;
+  switch (id) {
+    case "ironConstitution": hero.maxHp += 15; hero.hp = hero.maxHp; break;
+    case "ruthlessStrike":   hero.str += 3; break;
+    case "shadowstep":       hero.agi += 3; break;
+    case "ironWill":         hero.will += 3; break;
+    case "lanternKeeper":    hero.light += 3; break;
+    case "tonicCache":       hero.potions += 2; break;
+    case "warriorsBlood":    hero.maxHp += 8; hero.hp = Math.min(hero.hp + 8, hero.maxHp); hero.str += 1; break;
+    case "wardenEye":        hero.will += 2; hero.light += 2; break;
+    case "combatant":        hero.str += 2; hero.agi += 2; break;
+    case "alchemist":        hero.potions += 1; hero.will += 2; break;
+  }
+  const perk = PERKS.find((p) => p.id === id);
+  if (perk) addLog(`${perk.name}: ${perk.desc}`, "good");
+  state.levelUpQueue.shift();
+  closeLevelUpModal();
+  if (state.levelUpQueue.length > 0) {
+    openLevelUpModal();
+  } else {
+    render();
   }
 }
 
@@ -1267,6 +1346,14 @@ function render() {
 
 window.addEventListener("keydown", (event) => {
   if (event.target instanceof HTMLInputElement) return;
+
+  if (!els.levelupModal.classList.contains("hidden")) {
+    const cards = els.levelupContent.querySelectorAll(".perk-card");
+    if (event.key === "1" && cards[0]) { event.preventDefault(); cards[0].click(); return; }
+    if (event.key === "2" && cards[1]) { event.preventDefault(); cards[1].click(); return; }
+    if (event.key === "3" && cards[2]) { event.preventDefault(); cards[2].click(); return; }
+    return;
+  }
 
   if (event.key === "Escape" && hasOpenDialog()) {
     closeOpenDialogs();
