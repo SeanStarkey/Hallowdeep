@@ -868,6 +868,60 @@ canvas {
   }
 }
 
+.debug-panel {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+
+.debug-panel h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--blood);
+}
+
+.debug-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.debug-depth-row {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.debug-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.debug-input:focus {
+  outline: 1px solid var(--gold);
+  border-color: var(--gold);
+}
+
+.debug-grid .command.secondary {
+  min-width: 0;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.debug-grid .command.secondary.active {
+  background: #3a1010;
+  border-color: var(--blood);
+  color: #ff8c7f;
+}
+
 .perk-card {
   display: grid;
   gap: 0.4rem;

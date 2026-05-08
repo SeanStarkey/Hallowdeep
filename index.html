@@ -112,6 +112,22 @@
           <h3>Chronicle</h3>
           <ol id="log"></ol>
         </section>
+        <section id="debug-panel" class="debug-panel hidden" aria-label="Debug tools">
+          <h3>Debug</h3>
+          <div class="debug-grid">
+            <button id="dbg-level-up" class="command secondary" type="button">Level Up</button>
+            <button id="dbg-full-heal" class="command secondary" type="button">Full Heal</button>
+            <button id="dbg-add-tonics" class="command secondary" type="button">+5 Tonics</button>
+            <button id="dbg-kill-all" class="command secondary" type="button">Kill All</button>
+            <button id="dbg-reveal" class="command secondary" type="button">Reveal Map</button>
+            <button id="dbg-god-mode" class="command secondary" type="button">God Mode: Off</button>
+            <button id="dbg-next-depth" class="command secondary" type="button">Next Depth</button>
+            <div class="debug-depth-row">
+              <input id="dbg-depth-input" class="debug-input" type="number" min="1" max="99" value="1" aria-label="Target depth">
+              <button id="dbg-set-depth" class="command secondary" type="button">Set Depth</button>
+            </div>
+          </div>
+        </section>
       </aside>
     </main>
 

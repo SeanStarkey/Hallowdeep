@@ -88,6 +88,9 @@ let camera = { x: 0, y: 0 };
 let particles = [];
 let particleAnimId = null;
 
+let debugMode = new URLSearchParams(location.search).has("debug");
+let godMode = false;
+
 const abilityDefinitions = {
   blink: {
     name: "Blink",
@@ -262,7 +265,7 @@ function heroWill(hero) {
 }
 
 function heroDefense(hero) {
-  return Math.floor(heroWill(hero) / 3) + gearBonus(hero, "defense");
+  return Math.floor(hero.agi / 3) + gearBonus(hero, "defense");
 }
 
 function heroLight(hero) {
@@ -911,6 +914,7 @@ function attack(attacker, defender) {
   const ability = heroAttack ? abilityFor(defender) : abilityFor(attacker);
   const baseDamage = Math.max(1, roll + attackPower - defensePower);
   const damage = !heroAttack && ability?.modifyDamage ? ability.modifyDamage(attacker, defender, baseDamage) : baseDamage;
+  if (!heroAttack && godMode) return;
   defender.hp -= damage;
 
   if (heroAttack) {
@@ -1318,8 +1322,8 @@ function renderUi() {
   els.score.textContent = scoreRun().toLocaleString();
   els.statuses.innerHTML = statusBadges(hero);
   els.str.textContent = `${hero.str} (+${gearBonus(hero, "attack")} atk)`;
-  els.agi.textContent = hero.agi;
-  els.will.textContent = `${heroWill(hero)} (+${gearBonus(hero, "defense")} def)`;
+  els.agi.textContent = `${hero.agi} (+${gearBonus(hero, "defense")} def)`;
+  els.will.textContent = heroWill(hero);
   els.light.textContent = `${heroLight(hero)}`;
   els.inventory.textContent = `${hero.potions} pumpkin tonic${hero.potions === 1 ? "" : "s"}`;
   els.examine.textContent = examineText;
@@ -1344,6 +1348,101 @@ function render() {
   renderUi();
 }
 
+// --- Debug panel ---
+
+const debugPanel = document.querySelector("#debug-panel");
+const dbgGodModeBtn = document.querySelector("#dbg-god-mode");
+
+function applyDebugMode() {
+  if (debugMode) {
+    debugPanel.classList.remove("hidden");
+  } else {
+    debugPanel.classList.add("hidden");
+    godMode = false;
+    dbgGodModeBtn.classList.remove("active");
+    dbgGodModeBtn.textContent = "God Mode: Off";
+  }
+}
+
+function debugLevelUp() {
+  if (state.over) return;
+  gainXp(state.hero.nextXp - state.hero.xp);
+  render();
+}
+
+function debugFullHeal() {
+  if (state.over) return;
+  state.hero.hp = state.hero.maxHp;
+  addLog("[Debug] Full heal.", "good");
+  render();
+}
+
+function debugAddTonics() {
+  if (state.over) return;
+  state.hero.potions += 5;
+  addLog("[Debug] +5 tonics.", "good");
+  render();
+}
+
+function debugKillAll() {
+  if (state.over) return;
+  const hero = state.hero;
+  for (const monster of [...state.monsters]) {
+    state.killCounts[monster.name] = (state.killCounts[monster.name] || 0) + 1;
+    hero.kills += 1;
+    gainXp(monster.xp);
+  }
+  state.monsters = [];
+  addLog("[Debug] All monsters slain.", "good");
+  render();
+}
+
+function debugRevealMap() {
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (state.map[y][x] !== WALL) state.visited[y][x] = 1;
+    }
+  }
+  addLog("[Debug] Map revealed.", "good");
+  render();
+}
+
+function debugToggleGodMode() {
+  godMode = !godMode;
+  dbgGodModeBtn.classList.toggle("active", godMode);
+  dbgGodModeBtn.textContent = `God Mode: ${godMode ? "On" : "Off"}`;
+  addLog(`[Debug] God mode ${godMode ? "on" : "off"}.`, godMode ? "good" : "");
+  render();
+}
+
+function debugNextDepth() {
+  if (state.over) return;
+  addLog("[Debug] Descending to next depth.");
+  placeLevel(state.depth + 1, state.hero);
+  render();
+}
+
+function debugSetDepth() {
+  if (state.over) return;
+  const input = document.querySelector("#dbg-depth-input");
+  const depth = Math.max(1, Math.min(99, parseInt(input.value, 10) || 1));
+  input.value = depth;
+  addLog(`[Debug] Jumping to depth ${depth}.`);
+  placeLevel(depth, state.hero);
+  render();
+}
+
+document.querySelector("#dbg-level-up").addEventListener("click", debugLevelUp);
+document.querySelector("#dbg-full-heal").addEventListener("click", debugFullHeal);
+document.querySelector("#dbg-add-tonics").addEventListener("click", debugAddTonics);
+document.querySelector("#dbg-kill-all").addEventListener("click", debugKillAll);
+document.querySelector("#dbg-reveal").addEventListener("click", debugRevealMap);
+dbgGodModeBtn.addEventListener("click", debugToggleGodMode);
+document.querySelector("#dbg-next-depth").addEventListener("click", debugNextDepth);
+document.querySelector("#dbg-set-depth").addEventListener("click", debugSetDepth);
+
+applyDebugMode();
+
 window.addEventListener("keydown", (event) => {
   if (event.target instanceof HTMLInputElement) return;
 
@@ -1361,6 +1460,13 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (hasOpenDialog()) return;
+
+  if (event.key === "`") {
+    event.preventDefault();
+    debugMode = !debugMode;
+    applyDebugMode();
+    return;
+  }
 
   if (event.key === "?") {
     event.preventDefault();
