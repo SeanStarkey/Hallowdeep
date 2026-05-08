@@ -52,7 +52,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.08.03";
+const VERSION = "2026.05.08.04";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
@@ -68,6 +68,19 @@ const {
   spritePalettes,
   spritePatterns
 } = window.HallowdeepData;
+
+const fallbackBossBook = [
+  {
+    name: "Grinmaw, the Candle King",
+    hp: 42,
+    atk: 8,
+    xp: 32,
+    minDepth: 5,
+    color: "#f0a23a",
+    ability: "ignite",
+    sprite: "lantern"
+  }
+];
 
 const PERKS = [
   { id: "ironConstitution", name: "Iron Constitution", desc: "+15 max HP. Restore to full." },
@@ -448,8 +461,9 @@ function monsterForDepth(depth) {
 }
 
 function bossForDepth(depth) {
-  const candidates = bossBook.filter((boss) => boss.minDepth <= depth);
-  return candidates[candidates.length - 1] || bossBook[0];
+  const bosses = Array.isArray(bossBook) && bossBook.length ? bossBook : fallbackBossBook;
+  const candidates = bosses.filter((boss) => boss.minDepth <= depth);
+  return candidates[candidates.length - 1] || bosses[0];
 }
 
 function scaleMonster(base, depth) {
@@ -665,7 +679,7 @@ function hasOpenDialog() {
 
 function scoreRunFor(runState) {
   const hero = runState.hero;
-  return hero.totalXp + hero.kills * 10 + (runState.depth - 1) * 75 + (hero.level - 1) * 50 + runState.bossScoreBonus;
+  return hero.totalXp + hero.kills * 10 + (runState.depth - 1) * 75 + (hero.level - 1) * 50 + (runState.bossScoreBonus || 0);
 }
 
 function scoreRun() {
