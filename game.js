@@ -50,7 +50,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.05.02";
+const VERSION = "2026.05.08.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
@@ -70,6 +70,8 @@ let highScores = [];
 let scoreStatus = "Loading shared scores...";
 let examineText = "Nothing examined.";
 let camera = { x: 0, y: 0 };
+let particles = [];
+let particleAnimId = null;
 
 const abilityDefinitions = {
   blink: {
@@ -697,6 +699,11 @@ function endRun(cause) {
 
 function newGame() {
   closeDeathScreen();
+  if (particleAnimId !== null) {
+    cancelAnimationFrame(particleAnimId);
+    particleAnimId = null;
+  }
+  particles = [];
   state = {
     hero: makeHero(),
     map: [],
@@ -854,6 +861,7 @@ function tickHeroStatuses() {
   const hero = state.hero;
   if (hero.statuses.poison > 0) {
     hero.hp = Math.max(0, hero.hp - 2);
+    spawnDamageParticle(hero.x, hero.y, 2, true);
     addLog("Poison burns for 2 HP.", "danger");
     if (hero.hp <= 0) {
       endRun("Poison finished the run.");
@@ -863,6 +871,7 @@ function tickHeroStatuses() {
 
   if (!state.over && hero.statuses.burning > 0) {
     hero.hp = Math.max(0, hero.hp - 1);
+    spawnDamageParticle(hero.x, hero.y, 1, true);
     addLog("Flames scorch for 1 HP.", "danger");
     if (hero.hp <= 0) {
       endRun("Flames consumed the last of your strength.");
@@ -886,6 +895,7 @@ function attack(attacker, defender) {
   defender.hp -= damage;
 
   if (heroAttack) {
+    spawnDamageParticle(defender.x, defender.y, damage, false);
     addLog(`You strike the ${defender.name} for ${damage}.`);
     if (defender.hp <= 0) {
       if (ability?.onKilled?.(defender)) {
@@ -901,6 +911,7 @@ function attack(attacker, defender) {
       ability.onHeroHitMonster(defender, attacker, damage);
     }
   } else {
+    spawnDamageParticle(defender.x, defender.y, damage, true);
     addLog(`${attacker.name} wounds you for ${damage}.`, "danger");
     if (ability?.onMonsterHitHero) {
       ability.onMonsterHitHero(attacker, defender, damage);
@@ -1009,6 +1020,7 @@ function drinkPotion() {
   hero.potions -= 1;
   const heal = 10 + heroWill(hero);
   hero.hp = Math.min(hero.maxHp, hero.hp + heal);
+  spawnHealParticle(hero.x, hero.y, heal);
   for (const status of Object.keys(hero.statuses)) {
     hero.statuses[status] = Math.max(0, hero.statuses[status] - 2);
   }
@@ -1023,6 +1035,69 @@ function visible(x, y) {
   const dx = x - hero.x;
   const dy = y - hero.y;
   return Math.sqrt(dx * dx + dy * dy) <= heroLight(hero);
+}
+
+function spawnDamageParticle(x, y, amount, isHeroTarget) {
+  particles.push({
+    x, y,
+    text: String(amount),
+    textColor: isHeroTarget ? "#e05a5a" : "#f4ecd8",
+    flashColor: isHeroTarget ? "#c82828" : "#dc8214",
+    startTime: performance.now(),
+    duration: 650
+  });
+  if (particleAnimId === null) {
+    particleAnimId = requestAnimationFrame(stepParticles);
+  }
+}
+
+function spawnHealParticle(x, y, amount) {
+  particles.push({
+    x, y,
+    text: `+${amount}`,
+    textColor: "#7de07d",
+    flashColor: "#28b428",
+    startTime: performance.now(),
+    duration: 650
+  });
+  if (particleAnimId === null) {
+    particleAnimId = requestAnimationFrame(stepParticles);
+  }
+}
+
+function stepParticles() {
+  const now = performance.now();
+  particles = particles.filter(p => now - p.startTime < p.duration);
+  renderMap();
+  particleAnimId = particles.length > 0 ? requestAnimationFrame(stepParticles) : null;
+}
+
+function drawParticles(now) {
+  if (!particles.length) return;
+  ctx.save();
+  ctx.font = "bold 12px ui-sans-serif, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const p of particles) {
+    if (!inViewport(p.x, p.y)) continue;
+    const t = Math.min(1, (now - p.startTime) / p.duration);
+    const rise = t * TILE * 2;
+    const cx = toScreenX(p.x) + TILE / 2;
+    const cy = toScreenY(p.y) + TILE / 2 - rise;
+    if (t < 0.4) {
+      ctx.globalAlpha = (0.4 - t) / 0.4 * 0.55;
+      ctx.fillStyle = p.flashColor;
+      ctx.fillRect(toScreenX(p.x), toScreenY(p.y), TILE, TILE);
+    }
+    const alpha = 1 - t;
+    ctx.globalAlpha = alpha * 0.75;
+    ctx.fillStyle = "#000";
+    ctx.fillText(p.text, cx + 1, cy + 1);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.textColor;
+    ctx.fillText(p.text, cx, cy);
+  }
+  ctx.restore();
 }
 
 function drawTile(x, y, fill) {
@@ -1113,6 +1188,8 @@ function renderMap() {
   gradient.addColorStop(1, "rgba(0,0,0,0.55)");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawParticles(performance.now());
 
   if (state.over) {
     ctx.fillStyle = "rgba(10, 10, 8, 0.72)";

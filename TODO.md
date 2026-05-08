@@ -31,7 +31,6 @@
 
 ## UI
 
-- Add hit flashes, damage numbers, and death effects.
 - Improve mobile controls with diagonal movement or tap-to-move.
 - Add a full Chronicle scroll or log viewer so older entries are not lost when the panel fills.
 - Add keyboard rebinding stored in localStorage for non-QWERTY layouts and personal preference.
