@@ -114,6 +114,7 @@ location /Hallowdeep/api/ {
 location /Hallowdeep/ {
     alias /var/www/seanstarkey.dev/public/Hallowdeep/;
     try_files $uri $uri/ /Hallowdeep/index.html;
+    add_header Cache-Control "no-store" always;
 }
 ```
 
