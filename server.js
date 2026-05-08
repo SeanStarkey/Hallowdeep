@@ -77,8 +77,9 @@ function cleanScore(input) {
   const depth = Number(input.depth);
   const level = Number(input.level);
   const kills = Number(input.kills);
+  const bossKills = Number(input.bossKills || 0);
 
-  if (![score, depth, level, kills].every(Number.isFinite)) return null;
+  if (![score, depth, level, kills, bossKills].every(Number.isFinite)) return null;
 
   return {
     name: cleanName(input.name),
@@ -86,6 +87,7 @@ function cleanScore(input) {
     depth: Math.max(1, Math.floor(depth)),
     level: Math.max(1, Math.floor(level)),
     kills: Math.max(0, Math.floor(kills)),
+    bossKills: Math.max(0, Math.floor(bossKills)),
     date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })
   };
 }

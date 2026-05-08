@@ -14,3 +14,50 @@ window.HallowdeepData.monsterBook = [
   { name: "Lich", glyph: "L", hp: 20, atk: 7, xp: 16, minDepth: 7, color: "#dbd4e8", ability: "revive" },
   { name: "Wendigo", glyph: "W", hp: 22, atk: 8, xp: 18, minDepth: 8, color: "#d9d0ba", ability: "ravenous" }
 ];
+
+window.HallowdeepData.bossBook = [
+  {
+    name: "Grinmaw, the Candle King",
+    glyph: "G",
+    hp: 42,
+    atk: 8,
+    xp: 32,
+    minDepth: 5,
+    color: "#f0a23a",
+    ability: "ignite",
+    sprite: "lantern"
+  },
+  {
+    name: "Mother Hush",
+    glyph: "U",
+    hp: 58,
+    atk: 10,
+    xp: 46,
+    minDepth: 10,
+    color: "#c4d7d4",
+    ability: "scream",
+    sprite: "banshee"
+  },
+  {
+    name: "The Hollow Saint",
+    glyph: "T",
+    hp: 74,
+    atk: 12,
+    xp: 62,
+    minDepth: 15,
+    color: "#dbd4e8",
+    ability: "revive",
+    sprite: "lich"
+  },
+  {
+    name: "Old Hunger",
+    glyph: "O",
+    hp: 92,
+    atk: 15,
+    xp: 82,
+    minDepth: 20,
+    color: "#d9d0ba",
+    ability: "ravenous",
+    sprite: "wendigo"
+  }
+];

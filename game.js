@@ -52,12 +52,15 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.08.02";
+const VERSION = "2026.05.08.03";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const MAX_SCORES = 10;
+const BOSS_FLOOR_INTERVAL = 5;
+const BOSS_SCORE_BONUS = 250;
 
 const {
+  bossBook,
   emptyCharm,
   emptyWeapon,
   equipmentBook,
@@ -294,6 +297,10 @@ function abilityText(monster) {
   return ability ? `${ability.name}: ${ability.description}` : "No special ability.";
 }
 
+function isBossDepth(depth) {
+  return depth > 0 && depth % BOSS_FLOOR_INTERVAL === 0;
+}
+
 function addStatus(hero, status, turns) {
   hero.statuses[status] = Math.max(hero.statuses[status] || 0, turns);
 }
@@ -353,6 +360,7 @@ function makeHero() {
     },
     potions: 2,
     kills: 0,
+    bossKills: 0,
     totalXp: 0
   };
 }
@@ -439,6 +447,11 @@ function monsterForDepth(depth) {
   return pool[rand(pool.length)];
 }
 
+function bossForDepth(depth) {
+  const candidates = bossBook.filter((boss) => boss.minDepth <= depth);
+  return candidates[candidates.length - 1] || bossBook[0];
+}
+
 function scaleMonster(base, depth) {
   const extraDepth = Math.max(0, depth - base.minDepth);
   const hp = base.hp + extraDepth * 2;
@@ -448,6 +461,20 @@ function scaleMonster(base, depth) {
     maxHp: hp,
     atk: base.atk + Math.floor(extraDepth / 2),
     xp: base.xp + extraDepth * 2
+  };
+}
+
+function scaleBoss(base, depth) {
+  const extraDepth = Math.max(0, depth - base.minDepth);
+  const hp = base.hp + extraDepth * 4;
+  return {
+    ...base,
+    boss: true,
+    hp,
+    maxHp: hp,
+    atk: base.atk + Math.floor(extraDepth / 2),
+    xp: base.xp + extraDepth * 3,
+    scoreBonus: BOSS_SCORE_BONUS + depth * 25
   };
 }
 
@@ -473,7 +500,8 @@ function placeLevel(depth, hero) {
 
   const monsters = [];
   const occupied = new Set([key(hero.x, hero.y), key(stairs.x, stairs.y)]);
-  const monsterCount = Math.min(18 + depth * 3, 40);
+  const bossFloor = isBossDepth(depth);
+  const monsterCount = bossFloor ? 0 : Math.min(18 + depth * 3, 40);
 
   for (let i = 0; i < monsterCount; i++) {
     const room = rooms[1 + rand(Math.max(1, rooms.length - 1))] || start;
@@ -484,6 +512,21 @@ function placeLevel(depth, hero) {
     const base = scaleMonster(monsterForDepth(depth), depth);
     monsters.push({
       ...base,
+      x: p.x,
+      y: p.y
+    });
+  }
+
+  if (bossFloor) {
+    const bossRoom = rooms[Math.max(1, rooms.length - 2)] || stairsRoom;
+    let p = roomPoint(bossRoom);
+    for (let tries = 0; occupied.has(key(p.x, p.y)) && tries < 20; tries++) {
+      p = roomPoint(bossRoom);
+    }
+    const boss = scaleBoss(bossForDepth(depth), depth);
+    occupied.add(key(p.x, p.y));
+    monsters.push({
+      ...boss,
       x: p.x,
       y: p.y
     });
@@ -516,7 +559,12 @@ function placeLevel(depth, hero) {
   state.tonics = tonics;
   state.equipment = equipment;
   state.depth = depth;
+  state.bossFloor = bossFloor;
   state.visited = Array.from({ length: H }, () => new Uint8Array(W));
+
+  if (bossFloor) {
+    addLog("The stairs seal with cold fire. A lord of the deep is near.", "danger");
+  }
 }
 
 async function loadScores() {
@@ -617,7 +665,7 @@ function hasOpenDialog() {
 
 function scoreRunFor(runState) {
   const hero = runState.hero;
-  return hero.totalXp + hero.kills * 10 + (runState.depth - 1) * 75 + (hero.level - 1) * 50;
+  return hero.totalXp + hero.kills * 10 + (runState.depth - 1) * 75 + (hero.level - 1) * 50 + runState.bossScoreBonus;
 }
 
 function scoreRun() {
@@ -634,7 +682,8 @@ async function recordScore(runState = state) {
     score: scoreRunFor(runState),
     depth: runState.depth,
     level: hero.level,
-    kills: hero.kills
+    kills: hero.kills,
+    bossKills: hero.bossKills
   };
 
   try {
@@ -696,7 +745,9 @@ function deathScreenHtml() {
       <div><span>Depth</span><b>${state.depth}</b></div>
       <div><span>Level</span><b>${hero.level}</b></div>
       <div><span>Total Kills</span><b>${hero.kills}</b></div>
+      <div><span>Boss Kills</span><b>${hero.bossKills}</b></div>
       <div><span>XP Earned</span><b>${hero.totalXp}</b></div>
+      <div><span>Boss Bonus</span><b>${state.bossScoreBonus}</b></div>
     </div>
     <div class="death-loadout">
       <h3>Gear At Death</h3>
@@ -733,6 +784,8 @@ function newGame() {
     tonics: [],
     equipment: [],
     depth: 1,
+    bossFloor: false,
+    bossScoreBonus: 0,
     log: [],
     over: false,
     scored: false,
@@ -756,6 +809,10 @@ function blocked(x, y) {
 
 function monsterAt(x, y) {
   return state.monsters.find((m) => m.x === x && m.y === y);
+}
+
+function bossAlive() {
+  return state.monsters.some((monster) => monster.boss);
 }
 
 function occupiedByMonster(x, y, except = null) {
@@ -809,7 +866,8 @@ function describeTile(x, y) {
 
   const monster = monsterAt(x, y);
   if (monster) {
-    return `${monster.name}: HP ${Math.max(0, monster.hp)}/${monster.maxHp}, attack ${monster.atk}, worth ${monster.xp} XP. ${abilityText(monster)}`;
+    const reward = monster.boss ? `${monster.xp} XP and ${monster.scoreBonus} score bonus` : `${monster.xp} XP`;
+    return `${monster.name}: HP ${Math.max(0, monster.hp)}/${monster.maxHp}, attack ${monster.atk}, worth ${reward}. ${abilityText(monster)}`;
   }
 
   const equipmentIndex = equipmentAt(x, y);
@@ -819,7 +877,11 @@ function describeTile(x, y) {
   }
 
   if (tonicAt(x, y) >= 0) return "Pumpkin tonic: restores health when carried and used.";
-  if (state.map[y][x] === STAIRS) return "Stairs: descend to the next dungeon level.";
+  if (state.map[y][x] === STAIRS) {
+    return state.bossFloor && bossAlive()
+      ? "Sealed stairs: defeat this floor's boss to descend."
+      : "Stairs: descend to the next dungeon level.";
+  }
   if (state.map[y][x] === WALL) return "Cold stone wall.";
   return "Dungeon floor: quiet for the moment.";
 }
@@ -926,9 +988,17 @@ function attack(attacker, defender) {
       } else {
         state.monsters = state.monsters.filter((m) => m !== defender);
         state.hero.kills += 1;
+        if (defender.boss) {
+          state.hero.bossKills += 1;
+          state.bossScoreBonus += defender.scoreBonus;
+        }
         state.killCounts[defender.name] = (state.killCounts[defender.name] || 0) + 1;
         gainXp(defender.xp);
-        addLog(`${defender.name} falls into dust.`, "good");
+        if (defender.boss) {
+          addLog(`${defender.name} falls. The stairs burn open. +${defender.scoreBonus} score.`, "good");
+        } else {
+          addLog(`${defender.name} falls into dust.`, "good");
+        }
       }
     } else if (ability?.onHeroHitMonster) {
       ability.onHeroHitMonster(defender, attacker, damage);
@@ -1050,6 +1120,10 @@ function collectOrDescend() {
   }
 
   if (state.map[hero.y][hero.x] === STAIRS) {
+    if (state.bossFloor && bossAlive()) {
+      addLog("The stairs refuse you while their master still lives.", "danger");
+      return;
+    }
     addLog("You take the stairs into deeper dark.");
     placeLevel(state.depth + 1, hero);
   }
@@ -1209,6 +1283,7 @@ function drawSprite(sprite, x, y) {
 }
 
 function monsterSprite(monster) {
+  if (monster.sprite) return monster.sprite;
   const sprites = {
     "Salem Shade": "shade",
     Banshee: "banshee",
@@ -1254,7 +1329,14 @@ function renderMap() {
   }
 
   for (const monster of state.monsters) {
-    if (inViewport(monster.x, monster.y) && visible(monster.x, monster.y)) drawSprite(monsterSprite(monster), monster.x, monster.y);
+    if (inViewport(monster.x, monster.y) && visible(monster.x, monster.y)) {
+      if (monster.boss) {
+        ctx.strokeStyle = monster.color || "#f0a23a";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(toScreenX(monster.x) + 2, toScreenY(monster.y) + 2, TILE - 4, TILE - 4);
+      }
+      drawSprite(monsterSprite(monster), monster.x, monster.y);
+    }
   }
 
   drawSprite("hero", state.hero.x, state.hero.y);
@@ -1333,7 +1415,7 @@ function renderUi() {
     ? highScores
         .map(
           (score) =>
-            `<li><div class="score-row"><strong>${escapeHtml(score.name || "Nameless")}: ${score.score}</strong><span>D${score.depth} L${score.level} K${score.kills} - ${score.date}</span></div></li>`
+            `<li><div class="score-row"><strong>${escapeHtml(score.name || "Nameless")}: ${score.score}</strong><span>D${score.depth} L${score.level} K${score.kills} B${score.bossKills || 0} - ${score.date}</span></div></li>`
         )
         .join("")
     : `<li class="empty">${scoreStatus}</li>`;
@@ -1390,6 +1472,10 @@ function debugKillAll() {
   for (const monster of [...state.monsters]) {
     state.killCounts[monster.name] = (state.killCounts[monster.name] || 0) + 1;
     hero.kills += 1;
+    if (monster.boss) {
+      hero.bossKills += 1;
+      state.bossScoreBonus += monster.scoreBonus;
+    }
     gainXp(monster.xp);
   }
   state.monsters = [];
