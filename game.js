@@ -58,7 +58,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.26.02";
+const VERSION = "2026.05.26.03";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const SCORE_TOKEN_KEY = "hallowdeep.scoreToken";
@@ -383,7 +383,7 @@ function makeHero() {
     str: 6,
     agi: 5,
     will: 4,
-    light: 7,
+    light: 5,
     statuses: {
       poison: 0,
       dread: 0,
