@@ -23,6 +23,8 @@ const els = {
   weapon: document.querySelector("#weapon"),
   charm: document.querySelector("#charm"),
   examine: document.querySelector("#examine-text"),
+  scoresPanel: document.querySelector(".scores"),
+  scoresToggle: document.querySelector("#scores-toggle"),
   scores: document.querySelector("#high-scores"),
   log: document.querySelector("#log"),
   potion: document.querySelector("#drink-potion"),
@@ -58,7 +60,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.26.03";
+const VERSION = "2026.05.26.04";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const SCORE_TOKEN_KEY = "hallowdeep.scoreToken";
@@ -107,6 +109,7 @@ let state;
 let playerName = loadPlayerName();
 let highScores = [];
 let scoreStatus = "Loading shared scores...";
+let scoresCollapsed = true;
 let examineText = "Nothing examined.";
 let camera = { x: 0, y: 0 };
 let particles = [];
@@ -1606,10 +1609,19 @@ function renderUi() {
     .join("");
 }
 
+function renderScoresToggle() {
+  els.scoresPanel.classList.toggle("collapsed", scoresCollapsed);
+  els.scoresToggle.setAttribute("aria-expanded", String(!scoresCollapsed));
+  els.scoresToggle.textContent = scoresCollapsed ? "+" : "-";
+  els.scoresToggle.title = scoresCollapsed ? "Show high scores" : "Hide high scores";
+  els.scoresToggle.setAttribute("aria-label", scoresCollapsed ? "Show high scores" : "Hide high scores");
+}
+
 function render() {
   renderMap();
   renderMinimap();
   renderUi();
+  renderScoresToggle();
 }
 
 // --- Debug panel ---
@@ -1860,6 +1872,10 @@ els.itemModal.addEventListener("click", (event) => {
   if (event.target === els.itemModal) closeItemModal({ leavePending: true });
 });
 els.inventoryOpen.addEventListener("click", showBagModal);
+els.scoresToggle.addEventListener("click", () => {
+  scoresCollapsed = !scoresCollapsed;
+  renderScoresToggle();
+});
 els.potion.addEventListener("click", drinkPotion);
 els.waitActions.forEach((button) => button.addEventListener("click", waitHero));
 els.newGame.addEventListener("click", newGame);
