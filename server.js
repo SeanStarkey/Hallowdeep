@@ -1,4 +1,5 @@
 const http = require("http");
+const crypto = require("crypto");
 const { promises: fs } = require("fs");
 const path = require("path");
 
@@ -8,6 +9,7 @@ const DATA_DIR = path.join(ROOT, "data");
 const SCORE_FILE = path.join(DATA_DIR, "high-scores.json");
 const MAX_SCORES = 10;
 const MAX_BODY = 16 * 1024;
+const SCORE_WRITE_TOKEN = String(process.env.HALLOWDEEP_SCORE_TOKEN || "").trim();
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -50,6 +52,44 @@ function sendJson(res, status, payload) {
     "Cache-Control": "no-store"
   });
   res.end(JSON.stringify(payload));
+}
+
+function sendText(res, status, message) {
+  res.writeHead(status, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
+  res.end(message);
+}
+
+function scoreTokenFrom(req) {
+  const headerToken = req.headers["x-hallowdeep-score-token"];
+  if (Array.isArray(headerToken)) return headerToken[0] || "";
+  if (headerToken) return headerToken;
+
+  const auth = req.headers.authorization || "";
+  return auth.startsWith("Bearer ") ? auth.slice(7) : "";
+}
+
+function tokenMatches(actual, expected) {
+  const actualBuffer = Buffer.from(actual);
+  const expectedBuffer = Buffer.from(expected);
+  return actualBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
+function requireScoreWriteToken(req, res) {
+  if (!SCORE_WRITE_TOKEN) {
+    sendJson(res, 503, { error: "Score submissions are not configured" });
+    return false;
+  }
+
+  if (!tokenMatches(scoreTokenFrom(req), SCORE_WRITE_TOKEN)) {
+    sendJson(res, 403, { error: "Score write token required" });
+    return false;
+  }
+
+  return true;
 }
 
 function readBody(req) {
@@ -99,6 +139,8 @@ async function handleScores(req, res) {
   }
 
   if (req.method === "POST") {
+    if (!requireScoreWriteToken(req, res)) return;
+
     try {
       const score = cleanScore(JSON.parse(await readBody(req) || "{}"));
       if (!score) {
@@ -117,6 +159,8 @@ async function handleScores(req, res) {
   }
 
   if (req.method === "DELETE") {
+    if (!requireScoreWriteToken(req, res)) return;
+
     await writeScores([]);
     sendJson(res, 200, { scores: [] });
     return;
@@ -125,12 +169,22 @@ async function handleScores(req, res) {
   sendJson(res, 405, { error: "Method not allowed" });
 }
 
-async function serveStatic(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  const requested = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
-  const filePath = path.normalize(path.join(ROOT, requested));
+async function serveStatic(pathname, res) {
+  let requested;
+  try {
+    requested = pathname === "/" ? "/index.html" : decodeURIComponent(pathname);
+  } catch {
+    sendText(res, 400, "Bad request");
+    return;
+  }
 
-  if (!filePath.startsWith(ROOT) || filePath.includes(`${path.sep}data${path.sep}`)) {
+  const filePath = path.resolve(ROOT, requested.replace(/^\/+/, ""));
+  const relativePath = path.relative(ROOT, filePath);
+
+  if (relativePath.startsWith("..") ||
+      path.isAbsolute(relativePath) ||
+      relativePath === "data" ||
+      relativePath.startsWith(`data${path.sep}`)) {
     res.writeHead(403);
     res.end("Forbidden");
     return;
@@ -148,11 +202,17 @@ async function serveStatic(req, res) {
 }
 
 const server = http.createServer((req, res) => {
-  if (req.url.startsWith("/api/scores")) {
+  const pathname = String(req.url || "").split(/[?#]/, 1)[0] || "/";
+  if (!pathname.startsWith("/")) {
+    sendText(res, 400, "Bad request");
+    return;
+  }
+
+  if (pathname === "/api/scores") {
     handleScores(req, res);
     return;
   }
-  serveStatic(req, res);
+  serveStatic(pathname, res);
 });
 
 ensureScoreFile()

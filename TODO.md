@@ -55,7 +55,6 @@
 
 - Add a health check endpoint for the score server.
 - Add basic rate limiting or validation hardening for score submissions.
-- Add a score submission auth token (env-var shared secret) checked on POST and DELETE to prevent casual manipulation.
 - Add backup instructions for `data/high-scores.json`.
 - Add deployment notes for updating NGINX and restarting the Node service.
 - Add security headers to server responses: Content-Security-Policy, X-Content-Type-Options, and X-Frame-Options.

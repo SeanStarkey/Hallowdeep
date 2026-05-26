@@ -60,8 +60,10 @@ Scores are stored in `data/high-scores.json`. The server creates the file if it 
 The high-score API supports:
 
 - `GET /api/scores`
-- `POST /api/scores`
-- `DELETE /api/scores`
+- `POST /api/scores` with `X-Hallowdeep-Score-Token`
+- `DELETE /api/scores` with `X-Hallowdeep-Score-Token`
+
+Set `HALLOWDEEP_SCORE_TOKEN` in the server environment to enable score writes.
 
 ## Deployment
 

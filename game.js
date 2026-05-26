@@ -52,9 +52,10 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.08.04";
+const VERSION = "2026.05.26.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
+const SCORE_TOKEN_KEY = "hallowdeep.scoreToken";
 const MAX_SCORES = 10;
 const BOSS_FLOOR_INTERVAL = 5;
 const BOSS_SCORE_BONUS = 250;
@@ -701,9 +702,13 @@ async function recordScore(runState = state) {
   };
 
   try {
+    const headers = { "Content-Type": "application/json", Accept: "application/json" };
+    const scoreToken = localStorage.getItem(SCORE_TOKEN_KEY);
+    if (scoreToken) headers["X-Hallowdeep-Score-Token"] = scoreToken;
+
     const response = await fetch(SCORE_API, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers,
       body: JSON.stringify(score)
     });
     if (!response.ok) throw new Error(`Score API returned ${response.status}`);
@@ -720,7 +725,11 @@ async function recordScore(runState = state) {
 
 async function clearScores() {
   try {
-    const response = await fetch(SCORE_API, { method: "DELETE", headers: { Accept: "application/json" } });
+    const headers = { Accept: "application/json" };
+    const scoreToken = localStorage.getItem(SCORE_TOKEN_KEY);
+    if (scoreToken) headers["X-Hallowdeep-Score-Token"] = scoreToken;
+
+    const response = await fetch(SCORE_API, { method: "DELETE", headers });
     if (!response.ok) throw new Error(`Score API returned ${response.status}`);
     highScores = [];
     scoreStatus = "No fallen adventurers yet.";
