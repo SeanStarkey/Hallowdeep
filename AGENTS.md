@@ -51,6 +51,7 @@ Core files:
 
 ## Git And Collaboration
 
+- Work directly on `main` for development in this repository; do not create feature branches unless the user explicitly asks for one.
 - Do not revert unrelated changes.
 - Read nearby code before editing, and follow existing patterns.
 - Summarize changed behavior and verification steps when finishing work.
