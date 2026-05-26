@@ -19,6 +19,7 @@ const els = {
   will: document.querySelector("#will"),
   light: document.querySelector("#light"),
   inventory: document.querySelector("#inventory-text"),
+  inventoryOpen: document.querySelector("#inventory-open"),
   weapon: document.querySelector("#weapon"),
   charm: document.querySelector("#charm"),
   examine: document.querySelector("#examine-text"),
@@ -38,6 +39,11 @@ const els = {
   deathClose: document.querySelector("#death-close"),
   deathReview: document.querySelector("#death-review"),
   deathNewRun: document.querySelector("#death-new-run"),
+  itemModal: document.querySelector("#item-modal"),
+  itemKicker: document.querySelector("#item-kicker"),
+  itemTitle: document.querySelector("#item-title"),
+  itemContent: document.querySelector("#item-content"),
+  itemClose: document.querySelector("#item-close"),
   levelupModal: document.querySelector("#levelup-modal"),
   levelupContent: document.querySelector("#levelup-content"),
   newGame: document.querySelector("#new-game")
@@ -52,11 +58,12 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.26.01";
+const VERSION = "2026.05.26.02";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const SCORE_TOKEN_KEY = "hallowdeep.scoreToken";
 const MAX_SCORES = 10;
+const MAX_BAG_ITEMS = 4;
 const BOSS_FLOOR_INTERVAL = 5;
 const BOSS_SCORE_BONUS = 250;
 
@@ -104,6 +111,7 @@ let examineText = "Nothing examined.";
 let camera = { x: 0, y: 0 };
 let particles = [];
 let particleAnimId = null;
+let pendingItem = null;
 
 let debugMode = new URLSearchParams(location.search).has("debug");
 let godMode = false;
@@ -289,10 +297,6 @@ function heroLight(hero) {
   return hero.light + gearBonus(hero, "light");
 }
 
-function itemPower(item) {
-  return item.attack * 3 + item.defense * 2 + item.will * 2 + item.light * 2 + item.tier;
-}
-
 function itemStats(item) {
   const stats = [];
   if (item.attack) stats.push(`+${item.attack} attack`);
@@ -300,6 +304,24 @@ function itemStats(item) {
   if (item.will) stats.push(`+${item.will} will`);
   if (item.light) stats.push(`+${item.light} lantern`);
   return stats.join(", ") || "no bonus";
+}
+
+function itemSummary(item) {
+  return `${item.slot}, ${itemStats(item)}`;
+}
+
+function isRealItem(item) {
+  return item && item.tier > 0;
+}
+
+function itemCardHtml(item, label = "") {
+  return `
+    <div class="item-card">
+      ${label ? `<span>${escapeHtml(label)}</span>` : ""}
+      <b>${escapeHtml(item.name)}</b>
+      <small>${escapeHtml(itemSummary(item))}</small>
+    </div>
+  `;
 }
 
 function abilityFor(monster) {
@@ -372,6 +394,7 @@ function makeHero() {
       weapon: { ...emptyWeapon },
       charm: { ...emptyCharm }
     },
+    bag: [],
     potions: 2,
     kills: 0,
     bossKills: 0,
@@ -665,14 +688,81 @@ function closeDeathScreen() {
   els.deathModal.classList.add("hidden");
 }
 
+function showFoundItemModal(item) {
+  pendingItem = item;
+  const hero = state.hero;
+  const current = hero.equipment[item.slot];
+  const bagFull = hero.bag.length >= MAX_BAG_ITEMS;
+  els.itemKicker.textContent = "Found Gear";
+  els.itemTitle.textContent = item.name;
+  els.itemClose.classList.remove("hidden");
+  els.itemContent.innerHTML = `
+    <div class="item-compare">
+      ${itemCardHtml(current, `Current ${item.slot}`)}
+      ${itemCardHtml(item, "Found")}
+    </div>
+    <div class="item-actions">
+      <button class="command" type="button" data-item-action="equip">Equip</button>
+      <button class="command secondary" type="button" data-item-action="pack" ${bagFull ? "disabled" : ""}>Pack</button>
+      <button class="command secondary" type="button" data-item-action="leave">Leave</button>
+    </div>
+    ${bagFull ? '<p class="item-note">Your bag is full.</p>' : '<p class="item-note">Press E to equip, B to pack, or L to leave.</p>'}
+  `;
+  els.itemContent.querySelectorAll("[data-item-action]").forEach((button) => {
+    button.addEventListener("click", () => handleFoundItem(button.dataset.itemAction));
+  });
+  els.itemModal.classList.remove("hidden");
+  els.itemContent.querySelector("[data-item-action='equip']")?.focus();
+}
+
+function showBagModal() {
+  const hero = state.hero;
+  pendingItem = null;
+  els.itemKicker.textContent = "Inventory";
+  els.itemTitle.textContent = `Bag ${hero.bag.length}/${MAX_BAG_ITEMS}`;
+  els.itemClose.classList.remove("hidden");
+  els.itemContent.innerHTML = hero.bag.length
+    ? `<div class="bag-list">${hero.bag.map((item, index) => `
+        <div class="bag-row">
+          ${itemCardHtml(item, `${index + 1}`)}
+          <div class="bag-actions">
+            <button class="command" type="button" data-bag-equip="${index}">Equip</button>
+            <button class="command secondary" type="button" data-bag-drop="${index}">Drop</button>
+          </div>
+        </div>
+      `).join("")}</div>
+      <p class="item-note">Press a number to equip an item. Dropped gear lands at your feet.</p>`
+    : '<p class="item-empty">Your bag is empty.</p>';
+  els.itemContent.querySelectorAll("[data-bag-equip]").forEach((button) => {
+    button.addEventListener("click", () => equipBagItem(Number(button.dataset.bagEquip)));
+  });
+  els.itemContent.querySelectorAll("[data-bag-drop]").forEach((button) => {
+    button.addEventListener("click", () => dropBagItem(Number(button.dataset.bagDrop)));
+  });
+  els.itemModal.classList.remove("hidden");
+  els.itemContent.querySelector("button")?.focus();
+}
+
+function closeItemModal({ leavePending = false } = {}) {
+  if (leavePending && pendingItem) {
+    leaveItemAtHero(pendingItem);
+    addLog(`Left ${pendingItem.name} behind.`);
+    render();
+  }
+  pendingItem = null;
+  els.itemModal.classList.add("hidden");
+}
+
 function closeOpenDialogs() {
+  closeItemModal({ leavePending: true });
   closeRoadmap();
   closeHelp();
   closeDeathScreen();
 }
 
 function hasOpenDialog() {
-  return !els.roadmapModal.classList.contains("hidden") ||
+  return !els.itemModal.classList.contains("hidden") ||
+    !els.roadmapModal.classList.contains("hidden") ||
     !els.helpModal.classList.contains("hidden") ||
     !els.deathModal.classList.contains("hidden") ||
     !els.levelupModal.classList.contains("hidden");
@@ -788,6 +878,8 @@ function endRun(cause) {
   if (state.over) return;
   state.over = true;
   state.deathCause = cause;
+  pendingItem = null;
+  els.itemModal.classList.add("hidden");
   recordScore(state);
   openDeathScreen();
 }
@@ -1117,14 +1209,81 @@ function applyPerk(id) {
   }
 }
 
+function leaveItemAtHero(item) {
+  state.equipment.push({ ...item, x: state.hero.x, y: state.hero.y });
+}
+
+function bagItem(hero, item) {
+  if (hero.bag.length >= MAX_BAG_ITEMS) return false;
+  const packed = { ...item };
+  delete packed.x;
+  delete packed.y;
+  hero.bag.push(packed);
+  return true;
+}
+
 function equipItem(hero, item) {
   const current = hero.equipment[item.slot];
-  if (itemPower(item) > itemPower(current)) {
-    hero.equipment[item.slot] = item;
-    addLog(`Equipped ${item.name}.`, "good");
+  hero.equipment[item.slot] = { ...item };
+  delete hero.equipment[item.slot].x;
+  delete hero.equipment[item.slot].y;
+
+  if (isRealItem(current)) {
+    if (hero.bag.length < MAX_BAG_ITEMS) {
+      hero.bag.push({ ...current });
+      addLog(`Equipped ${item.name}; packed ${current.name}.`, "good");
+    } else {
+      leaveItemAtHero(current);
+      addLog(`Equipped ${item.name}; dropped ${current.name}.`, "good");
+    }
   } else {
+    addLog(`Equipped ${item.name}.`, "good");
+  }
+}
+
+function handleFoundItem(action) {
+  if (!pendingItem) return;
+  const item = pendingItem;
+  pendingItem = null;
+  if (action === "equip") {
+    equipItem(state.hero, item);
+  } else if (action === "pack") {
+    if (bagItem(state.hero, item)) {
+      addLog(`Packed ${item.name}.`, "good");
+    } else {
+      leaveItemAtHero(item);
+      addLog(`Your bag is full. Left ${item.name} behind.`);
+    }
+  } else {
+    leaveItemAtHero(item);
     addLog(`Left ${item.name} behind.`);
   }
+  els.itemModal.classList.add("hidden");
+  render();
+}
+
+function equipBagItem(index) {
+  const hero = state.hero;
+  const item = hero.bag[index];
+  if (!item) return;
+  const current = hero.equipment[item.slot];
+  hero.bag.splice(index, 1);
+  hero.equipment[item.slot] = { ...item };
+  if (isRealItem(current)) hero.bag.splice(index, 0, { ...current });
+  addLog(`Equipped ${item.name}.`, "good");
+  showBagModal();
+  render();
+}
+
+function dropBagItem(index) {
+  const hero = state.hero;
+  const item = hero.bag[index];
+  if (!item) return;
+  hero.bag.splice(index, 1);
+  leaveItemAtHero(item);
+  addLog(`Dropped ${item.name}.`);
+  showBagModal();
+  render();
 }
 
 function collectOrDescend() {
@@ -1139,7 +1298,7 @@ function collectOrDescend() {
   const equipmentIndex = equipmentAt(hero.x, hero.y);
   if (equipmentIndex >= 0) {
     const item = state.equipment.splice(equipmentIndex, 1)[0];
-    equipItem(hero, item);
+    showFoundItemModal(item);
   }
 
   if (state.map[hero.y][hero.x] === STAIRS) {
@@ -1430,7 +1589,7 @@ function renderUi() {
   els.agi.textContent = `${hero.agi} (+${gearBonus(hero, "defense")} def)`;
   els.will.textContent = heroWill(hero);
   els.light.textContent = `${heroLight(hero)}`;
-  els.inventory.textContent = `${hero.potions} pumpkin tonic${hero.potions === 1 ? "" : "s"}`;
+  els.inventory.textContent = `${hero.potions} pumpkin tonic${hero.potions === 1 ? "" : "s"}; bag ${hero.bag.length}/${MAX_BAG_ITEMS}`;
   els.examine.textContent = examineText;
   els.weapon.textContent = hero.equipment.weapon.name;
   els.charm.textContent = hero.equipment.charm.name;
@@ -1563,6 +1722,28 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (!els.itemModal.classList.contains("hidden")) {
+    if (pendingItem) {
+      const key = event.key.toLowerCase();
+      if (key === "e") { event.preventDefault(); handleFoundItem("equip"); return; }
+      if (key === "b") { event.preventDefault(); handleFoundItem("pack"); return; }
+      if (key === "l" || event.key === "Escape") { event.preventDefault(); handleFoundItem("leave"); return; }
+    } else {
+      const index = Number(event.key) - 1;
+      if (Number.isInteger(index) && index >= 0 && index < state.hero.bag.length) {
+        event.preventDefault();
+        equipBagItem(index);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeItemModal();
+        return;
+      }
+    }
+    return;
+  }
+
   if (event.key === "Escape" && hasOpenDialog()) {
     closeOpenDialogs();
     return;
@@ -1607,6 +1788,12 @@ window.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() === "x") {
     event.preventDefault();
     examineTile(state.hero.x, state.hero.y);
+    return;
+  }
+
+  if (event.key.toLowerCase() === "i" || event.key.toLowerCase() === "b") {
+    event.preventDefault();
+    showBagModal();
     return;
   }
 
@@ -1668,6 +1855,11 @@ els.roadmapModal.addEventListener("click", (event) => {
 els.deathClose.addEventListener("click", closeDeathScreen);
 els.deathReview.addEventListener("click", closeDeathScreen);
 els.deathNewRun.addEventListener("click", newGame);
+els.itemClose.addEventListener("click", () => closeItemModal({ leavePending: true }));
+els.itemModal.addEventListener("click", (event) => {
+  if (event.target === els.itemModal) closeItemModal({ leavePending: true });
+});
+els.inventoryOpen.addEventListener("click", showBagModal);
 els.potion.addEventListener("click", drinkPotion);
 els.waitActions.forEach((button) => button.addEventListener("click", waitHero));
 els.newGame.addEventListener("click", newGame);

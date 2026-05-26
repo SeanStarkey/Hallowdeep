@@ -160,6 +160,17 @@ h3 {
   transform: translateY(-1px);
 }
 
+.command:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.command:disabled:hover {
+  border-color: var(--line);
+  background: #22251f;
+}
+
 canvas {
   display: block;
   width: 100%;
@@ -523,6 +534,76 @@ canvas {
   width: min(42rem, 100%);
 }
 
+.item-panel {
+  width: min(42rem, 100%);
+}
+
+.item-content {
+  display: grid;
+  gap: 1rem;
+  max-height: calc(min(42rem, 100vh - 2rem) - 5.5rem);
+  overflow: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.item-compare,
+.bag-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.item-compare {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.item-card {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #22251f;
+}
+
+.item-card span,
+.item-card small,
+.item-note,
+.item-empty {
+  color: var(--muted);
+}
+
+.item-card span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.item-card b {
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.item-actions,
+.bag-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.bag-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.item-note,
+.item-empty {
+  margin: 0;
+}
+
 .death-content {
   display: grid;
   gap: 1rem;
@@ -800,6 +881,21 @@ canvas {
   }
 
   .death-actions .command {
+    width: 100%;
+  }
+
+  .item-compare,
+  .bag-row {
+    grid-template-columns: 1fr;
+  }
+
+  .item-actions,
+  .bag-actions {
+    flex-direction: column;
+  }
+
+  .item-actions .command,
+  .bag-actions .command {
     width: 100%;
   }
 
