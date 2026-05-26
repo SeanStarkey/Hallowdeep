@@ -19,6 +19,7 @@
 - Add a flee mechanic to escape combat at the cost of a parting attack from the monster.
 - Add monster turn telegraphing to show intended movement before the monster acts.
 - Add difficulty modes (e.g., Normal, Cursed, Nightmare) that adjust monster scaling or player HP at run start.
+- Add a healing source (fountain) that spawns randomly once on boss levels. It disappears after used.
 
 ## Balance
 
