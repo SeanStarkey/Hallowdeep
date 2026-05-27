@@ -26,6 +26,13 @@ const els = {
   scoresPanel: document.querySelector(".scores"),
   scoresToggle: document.querySelector("#scores-toggle"),
   scores: document.querySelector("#high-scores"),
+  historyPanel: document.querySelector(".graveyard"),
+  historyToggle: document.querySelector("#history-toggle"),
+  historyOpen: document.querySelector("#history-open"),
+  history: document.querySelector("#run-history"),
+  historyModal: document.querySelector("#history-modal"),
+  historyContent: document.querySelector("#history-content"),
+  historyClose: document.querySelector("#history-close"),
   log: document.querySelector("#log"),
   potion: document.querySelector("#drink-potion"),
   waitActions: document.querySelectorAll("[data-wait]"),
@@ -60,11 +67,13 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.26.04";
+const VERSION = "2026.05.27.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const SCORE_TOKEN_KEY = "hallowdeep.scoreToken";
+const RUN_HISTORY_KEY = "hallowdeep.runHistory";
 const MAX_SCORES = 10;
+const MAX_RUN_HISTORY = 20;
 const MAX_BAG_ITEMS = 4;
 const BOSS_FLOOR_INTERVAL = 5;
 const BOSS_SCORE_BONUS = 250;
@@ -108,8 +117,10 @@ const PERKS = [
 let state;
 let playerName = loadPlayerName();
 let highScores = [];
+let runHistory = loadRunHistory();
 let scoreStatus = "Loading shared scores...";
 let scoresCollapsed = true;
+let historyCollapsed = true;
 let examineText = "Nothing examined.";
 let camera = { x: 0, y: 0 };
 let particles = [];
@@ -267,6 +278,55 @@ function setPlayerName(name) {
   localStorage.setItem(PLAYER_NAME_KEY, playerName);
   els.heroName.value = playerName;
   els.portrait.textContent = playerName[0].toUpperCase();
+}
+
+function loadRunHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || "[]");
+    return Array.isArray(saved) ? saved.slice(0, MAX_RUN_HISTORY) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRunHistory() {
+  localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(runHistory.slice(0, MAX_RUN_HISTORY)));
+}
+
+function topKillName(killCounts) {
+  const top = Object.entries(killCounts || {}).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+  return top ? `${top[0]} x${top[1]}` : "None";
+}
+
+function runRecordFor(runState) {
+  const hero = runState.hero;
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: playerName,
+    date: new Date().toISOString(),
+    score: scoreRunFor(runState),
+    depth: runState.depth,
+    level: hero.level,
+    kills: hero.kills,
+    bossKills: hero.bossKills,
+    xp: hero.totalXp,
+    cause: runState.deathCause || "The dungeon finished the tale.",
+    weapon: hero.equipment.weapon.name,
+    charm: hero.equipment.charm.name,
+    topKill: topKillName(runState.killCounts)
+  };
+}
+
+function recordRunHistory(runState) {
+  runHistory.unshift(runRecordFor(runState));
+  runHistory = runHistory.slice(0, MAX_RUN_HISTORY);
+  saveRunHistory();
+}
+
+function formatRunDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown date";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function escapeHtml(value) {
@@ -682,6 +742,60 @@ function closeHelp() {
   els.helpModal.classList.add("hidden");
 }
 
+function historyCardHtml(run, index, compact = false) {
+  const rank = index + 1;
+  const score = Number(run.score || 0).toLocaleString();
+  const detail = `D${run.depth || 1} L${run.level || 1} K${run.kills || 0} B${run.bossKills || 0}`;
+  if (compact) {
+    return `
+      <article class="history-row">
+        <div>
+          <strong>${rank}. ${escapeHtml(run.name || "Nameless")}: ${score}</strong>
+          <span>${detail} - ${escapeHtml(formatRunDate(run.date))}</span>
+        </div>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="history-card">
+      <div class="history-card-head">
+        <div>
+          <span>${escapeHtml(formatRunDate(run.date))}</span>
+          <strong>${escapeHtml(run.name || "Nameless")}</strong>
+        </div>
+        <b>${score}</b>
+      </div>
+      <p>${escapeHtml(run.cause || "The dungeon finished the tale.")}</p>
+      <dl>
+        <div><dt>Depth</dt><dd>${run.depth || 1}</dd></div>
+        <div><dt>Level</dt><dd>${run.level || 1}</dd></div>
+        <div><dt>Kills</dt><dd>${run.kills || 0}</dd></div>
+        <div><dt>Bosses</dt><dd>${run.bossKills || 0}</dd></div>
+        <div><dt>Weapon</dt><dd>${escapeHtml(run.weapon || "Bare Hands")}</dd></div>
+        <div><dt>Charm</dt><dd>${escapeHtml(run.charm || "None")}</dd></div>
+        <div><dt>Top Kill</dt><dd>${escapeHtml(run.topKill || "None")}</dd></div>
+        <div><dt>XP</dt><dd>${run.xp || 0}</dd></div>
+      </dl>
+    </article>
+  `;
+}
+
+function historyHtml() {
+  return runHistory.length
+    ? runHistory.map((run, index) => historyCardHtml(run, index)).join("")
+    : '<p class="history-empty">No completed runs yet.</p>';
+}
+
+function openHistory() {
+  els.historyContent.innerHTML = historyHtml();
+  els.historyModal.classList.remove("hidden");
+}
+
+function closeHistory() {
+  els.historyModal.classList.add("hidden");
+}
+
 function openDeathScreen() {
   els.deathContent.innerHTML = deathScreenHtml();
   els.deathModal.classList.remove("hidden");
@@ -760,12 +874,14 @@ function closeOpenDialogs() {
   closeItemModal({ leavePending: true });
   closeRoadmap();
   closeHelp();
+  closeHistory();
   closeDeathScreen();
 }
 
 function hasOpenDialog() {
   return !els.itemModal.classList.contains("hidden") ||
     !els.roadmapModal.classList.contains("hidden") ||
+    !els.historyModal.classList.contains("hidden") ||
     !els.helpModal.classList.contains("hidden") ||
     !els.deathModal.classList.contains("hidden") ||
     !els.levelupModal.classList.contains("hidden");
@@ -883,6 +999,8 @@ function endRun(cause) {
   state.deathCause = cause;
   pendingItem = null;
   els.itemModal.classList.add("hidden");
+  setPlayerName(els.heroName.value);
+  recordRunHistory(state);
   recordScore(state);
   openDeathScreen();
 }
@@ -1604,6 +1722,9 @@ function renderUi() {
         )
         .join("")
     : `<li class="empty">${scoreStatus}</li>`;
+  els.history.innerHTML = runHistory.length
+    ? runHistory.slice(0, 3).map((run, index) => historyCardHtml(run, index, true)).join("")
+    : '<p class="history-empty">No completed runs yet.</p>';
   els.log.innerHTML = state.log
     .map((entry) => `<li class="${entry.tone}">${entry.text}</li>`)
     .join("");
@@ -1617,11 +1738,20 @@ function renderScoresToggle() {
   els.scoresToggle.setAttribute("aria-label", scoresCollapsed ? "Show high scores" : "Hide high scores");
 }
 
+function renderHistoryToggle() {
+  els.historyPanel.classList.toggle("collapsed", historyCollapsed);
+  els.historyToggle.setAttribute("aria-expanded", String(!historyCollapsed));
+  els.historyToggle.textContent = historyCollapsed ? "+" : "-";
+  els.historyToggle.title = historyCollapsed ? "Show graveyard" : "Hide graveyard";
+  els.historyToggle.setAttribute("aria-label", historyCollapsed ? "Show graveyard" : "Hide graveyard");
+}
+
 function render() {
   renderMap();
   renderMinimap();
   renderUi();
   renderScoresToggle();
+  renderHistoryToggle();
 }
 
 // --- Debug panel ---
@@ -1864,6 +1994,11 @@ els.roadmapClose.addEventListener("click", closeRoadmap);
 els.roadmapModal.addEventListener("click", (event) => {
   if (event.target === els.roadmapModal) closeRoadmap();
 });
+els.historyOpen.addEventListener("click", openHistory);
+els.historyClose.addEventListener("click", closeHistory);
+els.historyModal.addEventListener("click", (event) => {
+  if (event.target === els.historyModal) closeHistory();
+});
 els.deathClose.addEventListener("click", closeDeathScreen);
 els.deathReview.addEventListener("click", closeDeathScreen);
 els.deathNewRun.addEventListener("click", newGame);
@@ -1875,6 +2010,10 @@ els.inventoryOpen.addEventListener("click", showBagModal);
 els.scoresToggle.addEventListener("click", () => {
   scoresCollapsed = !scoresCollapsed;
   renderScoresToggle();
+});
+els.historyToggle.addEventListener("click", () => {
+  historyCollapsed = !historyCollapsed;
+  renderHistoryToggle();
 });
 els.potion.addEventListener("click", drinkPotion);
 els.waitActions.forEach((button) => button.addEventListener("click", waitHero));

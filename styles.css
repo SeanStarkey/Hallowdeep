@@ -211,6 +211,7 @@ canvas {
 .inventory,
 .equipment,
 .scores,
+.graveyard,
 .examine,
 .log {
   border: 1px solid var(--line);
@@ -282,6 +283,7 @@ canvas {
 .examine p,
 .scores li,
 .scores .empty,
+.graveyard,
 .log li {
   color: var(--muted);
   font-size: 0.92rem;
@@ -298,6 +300,7 @@ canvas {
 .inventory,
 .equipment,
 .scores,
+.graveyard,
 .examine,
 .log {
   padding: 0.85rem;
@@ -424,22 +427,29 @@ canvas {
   background: #d9d0ba;
 }
 
-.scores ol {
+.scores ol,
+.graveyard-preview {
   display: grid;
   gap: 0.45rem;
   margin: 0;
+}
+
+.scores ol {
   padding-left: 1.35rem;
 }
 
-.scores .section-title {
+.scores .section-title,
+.graveyard .section-title {
   margin-bottom: 0.65rem;
 }
 
-.scores.collapsed .section-title {
+.scores.collapsed .section-title,
+.graveyard.collapsed .section-title {
   margin-bottom: 0;
 }
 
-.scores.collapsed ol {
+.scores.collapsed ol,
+.graveyard.collapsed .graveyard-preview {
   display: none;
 }
 
@@ -459,6 +469,30 @@ canvas {
 }
 
 .score-row span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.history-row {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.history-row strong,
+.history-row span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-row strong {
+  color: var(--ink);
+}
+
+.history-row span {
   color: var(--muted);
   font-size: 0.8rem;
 }
@@ -550,6 +584,10 @@ canvas {
   width: min(42rem, 100%);
 }
 
+.history-panel {
+  width: min(44rem, 100%);
+}
+
 .item-panel {
   width: min(42rem, 100%);
 }
@@ -626,6 +664,92 @@ canvas {
   max-height: calc(min(42rem, 100vh - 2rem) - 9.5rem);
   overflow: auto;
   padding: 1rem 1.25rem 1.25rem;
+}
+
+.history-content {
+  display: grid;
+  gap: 0.75rem;
+  max-height: calc(min(42rem, 100vh - 2rem) - 5.5rem);
+  overflow: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.history-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #22251f;
+}
+
+.history-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.history-card-head div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.history-card-head span,
+.history-card dt,
+.history-empty {
+  color: var(--muted);
+}
+
+.history-card-head span,
+.history-card dt {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.history-card-head strong,
+.history-card-head b {
+  color: var(--gold);
+}
+
+.history-card-head strong,
+.history-card dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.history-card-head b {
+  white-space: nowrap;
+}
+
+.history-card p,
+.history-empty {
+  margin: 0;
+}
+
+.history-card p {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.history-card dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.history-card dl div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.history-card dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 800;
 }
 
 .death-score {
@@ -882,6 +1006,16 @@ canvas {
 
   .death-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-card dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
   .death-stats div:nth-child(2) {
