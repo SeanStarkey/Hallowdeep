@@ -6,7 +6,6 @@
 - Add ranged weapons for the character.
 - Add ranged or area abilities for late-depth monsters.
 - Add themed dungeon features such as locked doors, coffins, altars, traps, and shrines.
-- Add a proper inventory screen with item choices instead of auto-equipping only stronger gear.
 - Add consumables beyond pumpkin tonics, such as holy water, salt circles, and lantern oil.
 - Add a win condition or final depth instead of endless descent.
 - Add more attributes to the character.
