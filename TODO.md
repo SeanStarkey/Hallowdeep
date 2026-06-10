@@ -24,6 +24,11 @@
 - Add a healing source (fountain) that spawns randomly once on boss levels. It disappears after used.
 - Add a compass item that allows you to locate things, like the exit, better items and the boss.
 - Add boss floor buildup on preceding or current floors, such as themed warnings, environmental clues, and altered monster mixes.
+- Extend gear progression past depth 7, via deeper-tier equipment or scaling item affixes (e.g., "Silver Hatchet of Embers"), so loot stays relevant in endless descent.
+- Add elite monster variants with stat-modifying prefixes such as Swift, Venomous, Hulking, and Spectral, optionally granting a second ability.
+- Add build-defining perks beyond flat stat bumps, such as lifesteal on kill, thorns retaliation, a free tonic per boss kill, and a once-per-floor death save.
+- Add guaranteed unique boss relics: each boss drops a signature item nothing else drops.
+- Add branching stairs: occasionally offer a normal exit and a cursed exit that skips a depth but raises spawn danger.
 
 ## Balance
 
@@ -42,6 +47,9 @@
 - Add a first-run contextual hint (checked in localStorage) explaining movement and the goal.
 - Prompt user to change their name if it is the default at game start.
 - Expand death recaps with turns survived, damage dealt/taken, best item found, killer ability, and status at death.
+- Add visible status-effect indicators (poison, curse, dread) with remaining turn counts next to the HP bar.
+- Add hit feedback such as brief screen shake and sprite flash on damage, with a reduce-motion toggle.
+- Add a shareable death recap: copy-to-clipboard text summary of a run (morgue file).
 
 ## Persistence And Replayability
 
@@ -50,6 +58,7 @@
 - Add a daily seed: one shared seed per day giving every player the same dungeon.
 - Add local achievements or unlocks for milestones such as first boss kill, depth 10, no-tonic runs, and defeating every monster type.
 - Add optional score filters or views for personal bests, shared scores, daily runs, and challenge categories.
+- Add ghost markers on daily seeds showing where previous attempts (yours or top players) died.
 
 ## Art And Audio
 
@@ -59,7 +68,7 @@
 - Add sound effects for attacks, pickups, stairs, and monster abilities.
 - Add background ambience with a mute toggle.
 
-## Persistence And Deployment
+## Server And Deployment
 
 - Add a health check endpoint for the score server.
 - Add basic rate limiting or validation hardening for score submissions.
@@ -74,3 +83,5 @@
 - Expand debug mode with controls for spawning specific monsters/items during balancing.
 - Remove unused monster `glyph` fields if sprite rendering fully replaces glyphs.
 - Add monster behavior tags such as cowardly, patrol, guard, summoner, pack, territorial, and sleeper.
+- Split `game.js` into smaller script files (map generation, combat, rendering, persistence, UI wiring) without adding build tooling.
+- Add an explicit save migration policy for `SAVE_VERSION`: migrate or discard old active-run saves with a log message, and consider the same for run history.
