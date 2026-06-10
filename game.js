@@ -67,10 +67,9 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.06.10.01";
+const VERSION = "2026.06.10.02";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
-const SCORE_TOKEN_KEY = "hallowdeep.scoreToken";
 const RUN_HISTORY_KEY = "hallowdeep.runHistory";
 const ACTIVE_RUN_KEY = "hallowdeep.activeRun";
 const SAVE_VERSION = 1;
@@ -968,13 +967,9 @@ async function recordScore(runState = state) {
   };
 
   try {
-    const headers = { "Content-Type": "application/json", Accept: "application/json" };
-    const scoreToken = localStorage.getItem(SCORE_TOKEN_KEY);
-    if (scoreToken) headers["X-Hallowdeep-Score-Token"] = scoreToken;
-
     const response = await fetch(SCORE_API, {
       method: "POST",
-      headers,
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(score)
     });
     if (!response.ok) throw new Error(`Score API returned ${response.status}`);
@@ -985,22 +980,6 @@ async function recordScore(runState = state) {
   } catch {
     scoreStatus = "Could not save shared score.";
     if (state === runState) addLog("The shared scorebook could not be reached.", "danger");
-  }
-  renderUi();
-}
-
-async function clearScores() {
-  try {
-    const headers = { Accept: "application/json" };
-    const scoreToken = localStorage.getItem(SCORE_TOKEN_KEY);
-    if (scoreToken) headers["X-Hallowdeep-Score-Token"] = scoreToken;
-
-    const response = await fetch(SCORE_API, { method: "DELETE", headers });
-    if (!response.ok) throw new Error(`Score API returned ${response.status}`);
-    highScores = [];
-    scoreStatus = "No fallen adventurers yet.";
-  } catch {
-    scoreStatus = "Could not clear shared scores.";
   }
   renderUi();
 }

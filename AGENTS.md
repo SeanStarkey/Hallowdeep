@@ -47,7 +47,6 @@ Core files:
 - Preserve the existing API methods unless intentionally changing the contract:
   - `GET /api/scores`
   - `POST /api/scores`
-  - `DELETE /api/scores`
 
 ## Git And Collaboration
 

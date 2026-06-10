@@ -13,7 +13,7 @@ You can access the game to try at https://www.seanstarkey.dev/Hallowdeep
 - Scaling monsters with special abilities such as blink, dread, curse, poison, drain, and charge.
 - Hero stats, equipment, status conditions, inventory, event log, and tile examine panel.
 - Local/mobile controls plus keyboard play.
-- Shared high-score storage through `/api/scores`.
+- Shared high-score storage.
 - In-game roadmap loaded from `TODO.md`.
 
 ## Requirements
@@ -56,14 +56,6 @@ promo/                  Promo rendering helpers
 ## High Scores
 
 Scores are stored in `data/high-scores.json`. The server creates the file if it does not exist.
-
-The high-score API supports:
-
-- `GET /api/scores`
-- `POST /api/scores` with `X-Hallowdeep-Score-Token`
-- `DELETE /api/scores` with `X-Hallowdeep-Score-Token`
-
-Set `HALLOWDEEP_SCORE_TOKEN` in the server environment to enable score writes.
 
 ## Deployment
 

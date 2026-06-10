@@ -128,6 +128,5 @@ const SCORE_API = "api/scores";
 
 That makes score requests resolve to `/Hallowdeep/api/scores` when the game is hosted under `/Hallowdeep/`.
 
-Score writes require the server environment variable `HALLOWDEEP_SCORE_TOKEN`.
-Clients that are allowed to write scores must send the same value in the
-`X-Hallowdeep-Score-Token` header.
+To clear the shared leaderboard, edit `data/high-scores.json` on the server
+directly (reset it to `[]`).

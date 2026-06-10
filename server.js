@@ -1,5 +1,4 @@
 const http = require("http");
-const crypto = require("crypto");
 const { promises: fs } = require("fs");
 const path = require("path");
 
@@ -9,7 +8,6 @@ const DATA_DIR = path.join(ROOT, "data");
 const SCORE_FILE = path.join(DATA_DIR, "high-scores.json");
 const MAX_SCORES = 10;
 const MAX_BODY = 16 * 1024;
-const SCORE_WRITE_TOKEN = String(process.env.HALLOWDEEP_SCORE_TOKEN || "").trim();
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -62,36 +60,6 @@ function sendText(res, status, message) {
   res.end(message);
 }
 
-function scoreTokenFrom(req) {
-  const headerToken = req.headers["x-hallowdeep-score-token"];
-  if (Array.isArray(headerToken)) return headerToken[0] || "";
-  if (headerToken) return headerToken;
-
-  const auth = req.headers.authorization || "";
-  return auth.startsWith("Bearer ") ? auth.slice(7) : "";
-}
-
-function tokenMatches(actual, expected) {
-  const actualBuffer = Buffer.from(actual);
-  const expectedBuffer = Buffer.from(expected);
-  return actualBuffer.length === expectedBuffer.length &&
-    crypto.timingSafeEqual(actualBuffer, expectedBuffer);
-}
-
-function requireScoreWriteToken(req, res) {
-  if (!SCORE_WRITE_TOKEN) {
-    sendJson(res, 503, { error: "Score submissions are not configured" });
-    return false;
-  }
-
-  if (!tokenMatches(scoreTokenFrom(req), SCORE_WRITE_TOKEN)) {
-    sendJson(res, 403, { error: "Score write token required" });
-    return false;
-  }
-
-  return true;
-}
-
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -139,8 +107,6 @@ async function handleScores(req, res) {
   }
 
   if (req.method === "POST") {
-    if (!requireScoreWriteToken(req, res)) return;
-
     try {
       const score = cleanScore(JSON.parse(await readBody(req) || "{}"));
       if (!score) {
@@ -155,14 +121,6 @@ async function handleScores(req, res) {
     } catch {
       sendJson(res, 400, { error: "Invalid JSON" });
     }
-    return;
-  }
-
-  if (req.method === "DELETE") {
-    if (!requireScoreWriteToken(req, res)) return;
-
-    await writeScores([]);
-    sendJson(res, 200, { scores: [] });
     return;
   }
 
