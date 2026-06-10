@@ -38,7 +38,6 @@
 
 ## Persistence And Replayability
 
-- Add mid-run save to localStorage so closing the tab does not lose an active run.
 - Add personal best tracking in localStorage, separate from the shared leaderboard.
 - Add seed-based runs so players can enter a seed string for a deterministic dungeon.
 - Add a daily seed: one shared seed per day giving every player the same dungeon.

@@ -67,11 +67,13 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.05.27.01";
+const VERSION = "2026.06.10.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const SCORE_TOKEN_KEY = "hallowdeep.scoreToken";
 const RUN_HISTORY_KEY = "hallowdeep.runHistory";
+const ACTIVE_RUN_KEY = "hallowdeep.activeRun";
+const SAVE_VERSION = 1;
 const MAX_SCORES = 10;
 const MAX_RUN_HISTORY = 20;
 const MAX_BAG_ITEMS = 4;
@@ -291,6 +293,61 @@ function loadRunHistory() {
 
 function saveRunHistory() {
   localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(runHistory.slice(0, MAX_RUN_HISTORY)));
+}
+
+function saveActiveRun() {
+  if (!state || state.over) {
+    localStorage.removeItem(ACTIVE_RUN_KEY);
+    return;
+  }
+  try {
+    const payload = {
+      version: SAVE_VERSION,
+      w: W,
+      h: H,
+      pendingItem,
+      state: {
+        ...state,
+        map: state.map.map((row) => row.join("")),
+        visited: state.visited.map((row) => Array.from(row).join(""))
+      }
+    };
+    localStorage.setItem(ACTIVE_RUN_KEY, JSON.stringify(payload));
+  } catch {
+    // Storage may be full or unavailable; play continues without mid-run saves.
+  }
+}
+
+function clearActiveRun() {
+  localStorage.removeItem(ACTIVE_RUN_KEY);
+}
+
+function loadActiveRun() {
+  try {
+    const payload = JSON.parse(localStorage.getItem(ACTIVE_RUN_KEY) || "null");
+    if (!payload || payload.version !== SAVE_VERSION) return null;
+    const saved = payload.state;
+    if (!saved || !saved.hero || !Array.isArray(saved.map) || saved.over) return null;
+    if (!Number.isInteger(payload.w) || !Number.isInteger(payload.h)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function restoreRun(payload) {
+  W = payload.w;
+  H = payload.h;
+  state = payload.state;
+  state.map = state.map.map((row) => row.split(""));
+  state.visited = state.visited.map((row) => Uint8Array.from(row, (c) => Number(c)));
+  addLog("Your lantern rekindles where you left it.", "good");
+  render();
+  if (payload.pendingItem) {
+    showFoundItemModal(payload.pendingItem);
+  } else if (state.levelUpQueue.length > 0) {
+    openLevelUpModal();
+  }
 }
 
 function topKillName(killCounts) {
@@ -997,6 +1054,7 @@ function endRun(cause) {
   if (state.over) return;
   state.over = true;
   state.deathCause = cause;
+  clearActiveRun();
   pendingItem = null;
   els.itemModal.classList.add("hidden");
   setPlayerName(els.heroName.value);
@@ -1752,6 +1810,7 @@ function render() {
   renderUi();
   renderScoresToggle();
   renderHistoryToggle();
+  saveActiveRun();
 }
 
 // --- Debug panel ---
@@ -2020,5 +2079,10 @@ els.waitActions.forEach((button) => button.addEventListener("click", waitHero));
 els.newGame.addEventListener("click", newGame);
 
 setPlayerName(playerName);
-newGame();
+const savedRun = loadActiveRun();
+if (savedRun) {
+  restoreRun(savedRun);
+} else {
+  newGame();
+}
 loadScores();
