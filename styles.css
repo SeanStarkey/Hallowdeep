@@ -206,7 +206,6 @@ canvas {
 
 .hero-card,
 .stats,
-.conditions,
 .attributes,
 .inventory,
 .equipment,
@@ -296,7 +295,6 @@ canvas {
 }
 
 .attributes,
-.conditions,
 .inventory,
 .equipment,
 .scores,
@@ -306,15 +304,15 @@ canvas {
   padding: 0.85rem;
 }
 
-.conditions h3 {
-  margin-bottom: 0.5rem;
+.stats div.statuses-row {
+  border-bottom: 1px solid var(--line);
 }
 
 .status-list {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.45rem;
-  min-height: 2rem;
 }
 
 .status-badge {
