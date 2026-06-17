@@ -12,6 +12,7 @@ You can access the game to try at https://www.seanstarkey.dev/Hallowdeep
 - Turn-based movement and combat on a canvas-rendered board.
 - Scaling monsters with special abilities such as blink, dread, curse, poison, drain, and charge.
 - Hero stats, equipment, status conditions, inventory, event log, and tile examine panel.
+- Guaranteed boss relic drops with unique equipped effects.
 - Local/mobile controls plus keyboard play.
 - Shared high-score storage.
 - In-game roadmap loaded from `TODO.md`.

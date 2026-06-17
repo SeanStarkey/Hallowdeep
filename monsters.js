@@ -25,7 +25,8 @@ window.HallowdeepData.bossBook = [
     minDepth: 5,
     color: "#f0a23a",
     ability: "ignite",
-    sprite: "lantern"
+    sprite: "lantern",
+    relic: "candleKingsWick"
   },
   {
     name: "Mother Hush",
@@ -36,7 +37,8 @@ window.HallowdeepData.bossBook = [
     minDepth: 10,
     color: "#c4d7d4",
     ability: "scream",
-    sprite: "banshee"
+    sprite: "banshee",
+    relic: "motherHushVeil"
   },
   {
     name: "The Hollow Saint",
@@ -47,7 +49,8 @@ window.HallowdeepData.bossBook = [
     minDepth: 15,
     color: "#dbd4e8",
     ability: "revive",
-    sprite: "lich"
+    sprite: "lich",
+    relic: "hollowSaintReliquary"
   },
   {
     name: "Old Hunger",
@@ -58,6 +61,7 @@ window.HallowdeepData.bossBook = [
     minDepth: 20,
     color: "#d9d0ba",
     ability: "ravenous",
-    sprite: "wendigo"
+    sprite: "wendigo",
+    relic: "oldHungersFang"
   }
 ];

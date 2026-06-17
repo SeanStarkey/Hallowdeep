@@ -67,7 +67,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.06.10.02";
+const VERSION = "2026.06.17.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const RUN_HISTORY_KEY = "hallowdeep.runHistory";
@@ -81,6 +81,7 @@ const BOSS_SCORE_BONUS = 250;
 
 const {
   bossBook,
+  bossRelicBook = [],
   emptyCharm,
   emptyWeapon,
   equipmentBook,
@@ -98,7 +99,8 @@ const fallbackBossBook = [
     minDepth: 5,
     color: "#f0a23a",
     ability: "ignite",
-    sprite: "lantern"
+    sprite: "lantern",
+    relic: "candleKingsWick"
   }
 ];
 
@@ -150,8 +152,9 @@ const abilityDefinitions = {
     description: "Hits can rattle your will for a few turns.",
     onMonsterHitHero(monster, hero) {
       if (!chance(0.45)) return;
-      addStatus(hero, "dread", 4);
-      addLog(`${monster.name}'s scream chills your nerve.`, "danger");
+      if (addStatus(hero, "dread", 4)) {
+        addLog(`${monster.name}'s scream chills your nerve.`, "danger");
+      }
     }
   },
   curse: {
@@ -159,8 +162,9 @@ const abilityDefinitions = {
     description: "Hits can weaken your attack for a few turns.",
     onMonsterHitHero(monster, hero) {
       if (!chance(0.4)) return;
-      addStatus(hero, "curse", 4);
-      addLog(`${monster.name}'s curse weighs on your arms.`, "danger");
+      if (addStatus(hero, "curse", 4)) {
+        addLog(`${monster.name}'s curse weighs on your arms.`, "danger");
+      }
     }
   },
   poison: {
@@ -168,8 +172,9 @@ const abilityDefinitions = {
     description: "Hits can poison you for ongoing damage.",
     onMonsterHitHero(monster, hero) {
       if (!chance(0.45)) return;
-      addStatus(hero, "poison", 5);
-      addLog(`${monster.name} infects the wound.`, "danger");
+      if (addStatus(hero, "poison", 5)) {
+        addLog(`${monster.name} infects the wound.`, "danger");
+      }
     }
   },
   drain: {
@@ -213,8 +218,9 @@ const abilityDefinitions = {
     description: "Hits can set you ablaze for ongoing damage.",
     onMonsterHitHero(monster, hero) {
       if (!chance(0.4)) return;
-      addStatus(hero, "burning", 4);
-      addLog(`${monster.name} sets you alight.`, "danger");
+      if (addStatus(hero, "burning", 4)) {
+        addLog(`${monster.name} sets you alight.`, "danger");
+      }
     }
   },
   nimble: {
@@ -231,9 +237,11 @@ const abilityDefinitions = {
     description: "Hits can shatter both nerve and will at once.",
     onMonsterHitHero(monster, hero) {
       if (!chance(0.4)) return;
-      addStatus(hero, "dread", 3);
-      addStatus(hero, "curse", 3);
-      addLog(`${monster.name}'s hollow gaze unravels you.`, "danger");
+      const dreadApplied = addStatus(hero, "dread", 3);
+      const curseApplied = addStatus(hero, "curse", 3);
+      if (dreadApplied || curseApplied) {
+        addLog(`${monster.name}'s hollow gaze unravels you.`, "danger");
+      }
     }
   },
   revive: {
@@ -398,6 +406,24 @@ function gearBonus(hero, stat) {
   return hero.equipment.weapon[stat] + hero.equipment.charm[stat];
 }
 
+function equippedItems(hero) {
+  return [hero.equipment.weapon, hero.equipment.charm].filter(isRealItem);
+}
+
+function equippedEffectTotal(hero, effect) {
+  return equippedItems(hero).reduce((total, item) => total + (Number(item[effect]) || 0), 0);
+}
+
+function equippedStatusResist(hero, status) {
+  return equippedItems(hero).reduce((total, item) => total + (Number(item.statusResist?.[status]) || 0), 0);
+}
+
+function itemEffectText(item) {
+  if (!item.effectText) return "";
+  if (item.deathSave && item.deathSaveUsed) return `${item.effectText} Spent.`;
+  return item.effectText;
+}
+
 function heroAttackValue(hero) {
   const cursePenalty = hero.statuses.curse > 0 ? 2 : 0;
   return Math.max(1, hero.str + gearBonus(hero, "attack") - cursePenalty);
@@ -426,7 +452,8 @@ function itemStats(item) {
 }
 
 function itemSummary(item) {
-  return `${item.slot}, ${itemStats(item)}`;
+  const effect = itemEffectText(item);
+  return `${item.slot}, ${itemStats(item)}${effect ? `. ${effect}` : ""}`;
 }
 
 function isRealItem(item) {
@@ -434,11 +461,13 @@ function isRealItem(item) {
 }
 
 function itemCardHtml(item, label = "") {
+  const effect = itemEffectText(item);
   return `
-    <div class="item-card">
+    <div class="item-card ${item.relic ? "relic" : ""}">
       ${label ? `<span>${escapeHtml(label)}</span>` : ""}
       <b>${escapeHtml(item.name)}</b>
-      <small>${escapeHtml(itemSummary(item))}</small>
+      <small>${escapeHtml(`${item.slot}, ${itemStats(item)}`)}</small>
+      ${effect ? `<em>${escapeHtml(effect)}</em>` : ""}
     </div>
   `;
 }
@@ -457,7 +486,10 @@ function isBossDepth(depth) {
 }
 
 function addStatus(hero, status, turns) {
-  hero.statuses[status] = Math.max(hero.statuses[status] || 0, turns);
+  const reducedTurns = Math.max(0, turns - equippedStatusResist(hero, status));
+  if (reducedTurns <= 0) return 0;
+  hero.statuses[status] = Math.max(hero.statuses[status] || 0, reducedTurns);
+  return reducedTurns;
 }
 
 function statusText(hero) {
@@ -640,6 +672,37 @@ function equipmentForDepth(depth) {
   const nearby = candidates.filter((item) => item.minDepth >= depth - 3);
   const pool = nearby.length && chance(0.8) ? nearby : candidates;
   return { ...pool[rand(pool.length)] };
+}
+
+function bossRelicFor(monster) {
+  if (!monster.relic) return null;
+  const relic = bossRelicBook.find((item) => item.id === monster.relic);
+  return relic ? { ...relic, sourceBoss: monster.name } : null;
+}
+
+function openForItemDrop(x, y) {
+  return (
+    !blocked(x, y) &&
+    !(x === state.hero.x && y === state.hero.y) &&
+    !occupiedByMonster(x, y) &&
+    equipmentAt(x, y) < 0 &&
+    tonicAt(x, y) < 0 &&
+    state.map[y][x] !== STAIRS
+  );
+}
+
+function dropBossRelic(monster) {
+  const relic = bossRelicFor(monster);
+  if (!relic) return;
+  const nearby = nearbyOpenTiles(monster.x, monster.y, 3).filter((spot) => openForItemDrop(spot.x, spot.y));
+  const spots = openForItemDrop(monster.x, monster.y) ? [{ x: monster.x, y: monster.y }, ...nearby] : nearby;
+  const spot = spots[0];
+  if (!spot) {
+    addLog(`${monster.name}'s relic fades into unreachable dark.`, "danger");
+    return;
+  }
+  state.equipment.push({ ...relic, x: spot.x, y: spot.y });
+  addLog(`${monster.name} leaves behind ${relic.name}.`, "good");
 }
 
 
@@ -1146,7 +1209,7 @@ function describeTile(x, y) {
   const equipmentIndex = equipmentAt(x, y);
   if (equipmentIndex >= 0) {
     const item = state.equipment[equipmentIndex];
-    return `${item.name}: ${item.slot}, ${itemStats(item)}.`;
+    return `${item.name}: ${itemSummary(item)}.`;
   }
 
   if (tonicAt(x, y) >= 0) return "Pumpkin tonic: restores health when carried and used.";
@@ -1214,6 +1277,32 @@ function spendHeroTurn() {
   render();
 }
 
+function triggerDeathSave(cause) {
+  const hero = state.hero;
+  const relic = equippedItems(hero).find((item) => item.deathSave && !item.deathSaveUsed);
+  if (!relic) return false;
+  relic.deathSaveUsed = true;
+  hero.hp = Math.max(1, Math.floor(hero.maxHp * (relic.deathSaveHeal || 0.4)));
+  if (relic.clearStatusesOnDeathSave) {
+    for (const status of Object.keys(hero.statuses)) {
+      hero.statuses[status] = 0;
+    }
+  }
+  spawnHealParticle(hero.x, hero.y, hero.hp);
+  addLog(`${relic.name} flares against death: ${cause}`, "good");
+  return true;
+}
+
+function healHeroFromKill(monster) {
+  const hero = state.hero;
+  const heal = equippedEffectTotal(hero, "healOnKill");
+  if (heal <= 0 || hero.hp >= hero.maxHp) return;
+  const healed = Math.min(heal, hero.maxHp - hero.hp);
+  hero.hp += healed;
+  spawnHealParticle(hero.x, hero.y, healed);
+  addLog(`Old hunger answers ${monster.name}'s fall. +${healed} HP.`, "good");
+}
+
 function tickHeroStatuses() {
   const hero = state.hero;
   if (hero.statuses.poison > 0) {
@@ -1221,18 +1310,25 @@ function tickHeroStatuses() {
     spawnDamageParticle(hero.x, hero.y, 2, true);
     addLog("Poison burns for 2 HP.", "danger");
     if (hero.hp <= 0) {
-      endRun("Poison finished the run.");
-      addLog("The poison finishes the run.", "danger");
+      if (!triggerDeathSave("Poison finished the run.")) {
+        endRun("Poison finished the run.");
+        addLog("The poison finishes the run.", "danger");
+      }
     }
   }
 
   if (!state.over && hero.statuses.burning > 0) {
-    hero.hp = Math.max(0, hero.hp - 1);
-    spawnDamageParticle(hero.x, hero.y, 1, true);
-    addLog("Flames scorch for 1 HP.", "danger");
-    if (hero.hp <= 0) {
-      endRun("Flames consumed the last of your strength.");
-      addLog("The flames consume the last of your strength.", "danger");
+    const damage = Math.max(0, 1 - equippedEffectTotal(hero, "burningDamageReduction"));
+    if (damage > 0) {
+      hero.hp = Math.max(0, hero.hp - damage);
+      spawnDamageParticle(hero.x, hero.y, damage, true);
+      addLog(`Flames scorch for ${damage} HP.`, "danger");
+      if (hero.hp <= 0) {
+        if (!triggerDeathSave("Flames consumed the last of your strength.")) {
+          endRun("Flames consumed the last of your strength.");
+          addLog("The flames consume the last of your strength.", "danger");
+        }
+      }
     }
   }
 
@@ -1264,9 +1360,11 @@ function attack(attacker, defender) {
         if (defender.boss) {
           state.hero.bossKills += 1;
           state.bossScoreBonus += defender.scoreBonus;
+          dropBossRelic(defender);
         }
         state.killCounts[defender.name] = (state.killCounts[defender.name] || 0) + 1;
         gainXp(defender.xp);
+        healHeroFromKill(defender);
         if (defender.boss) {
           addLog(`${defender.name} falls. The stairs burn open. +${defender.scoreBonus} score.`, "good");
         } else {
@@ -1283,6 +1381,9 @@ function attack(attacker, defender) {
       ability.onMonsterHitHero(attacker, defender, damage);
     }
     if (defender.hp <= 0) {
+      if (triggerDeathSave(`${attacker.name} struck the final blow.`)) {
+        return;
+      }
       defender.hp = 0;
       endRun(`${attacker.name} struck the final blow.`);
       addLog("Your lantern gutters out. The run is over.", "danger");
@@ -1665,7 +1766,7 @@ function renderMap() {
   }
 
   for (const item of state.equipment) {
-    if (inViewport(item.x, item.y) && visible(item.x, item.y)) drawSprite("gear", item.x, item.y);
+    if (inViewport(item.x, item.y) && visible(item.x, item.y)) drawSprite(item.relic ? "relic" : "gear", item.x, item.y);
   }
 
   for (const monster of state.monsters) {

@@ -27,7 +27,6 @@
 - Extend gear progression past depth 7, via deeper-tier equipment or scaling item affixes (e.g., "Silver Hatchet of Embers"), so loot stays relevant in endless descent.
 - Add elite monster variants with stat-modifying prefixes such as Swift, Venomous, Hulking, and Spectral, optionally granting a second ability.
 - Add build-defining perks beyond flat stat bumps, such as lifesteal on kill, thorns retaliation, a free tonic per boss kill, and a once-per-floor death save.
-- Add guaranteed unique boss relics: each boss drops a signature item nothing else drops.
 - Add branching stairs: occasionally offer a normal exit and a cursed exit that skips a depth but raises spawn danger.
 
 ## Balance

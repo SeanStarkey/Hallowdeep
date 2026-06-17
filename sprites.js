@@ -5,6 +5,7 @@ window.HallowdeepData.spritePalettes = {
   stairs: { a: "#8a6fb0", b: "#cbb7f1", c: "#4b3c64" },
   tonic: { a: "#79a56f", b: "#e2b04f", c: "#f4ecd8", d: "#5a3a1d" },
   gear: { a: "#d9d0ba", b: "#7d7767", c: "#e2b04f" },
+  relic: { a: "#f4ecd8", b: "#e2b04f", c: "#8a6fb0", d: "#3d2b5f" },
   shade: { a: "#9f8bd3", b: "#d9d0ff", c: "#4d3e75" },
   banshee: { a: "#b7d7d8", b: "#eefcff", c: "#5c7a83" },
   mummy: { a: "#c9b073", b: "#f0dfaa", c: "#6b5a35" },
@@ -58,6 +59,15 @@ window.HallowdeepData.spritePatterns = {
     ".abccba.",
     "..abba..",
     "...aa..."
+  ],
+  relic: [
+    "...bb...",
+    "..baab..",
+    ".bacab.",
+    "bacdcab",
+    ".bacab.",
+    "..baab..",
+    "...bb..."
   ],
   shade: [
     "...aaaa...",

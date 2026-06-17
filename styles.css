@@ -620,6 +620,7 @@ canvas {
 
 .item-card span,
 .item-card small,
+.item-card em,
 .item-note,
 .item-empty {
   color: var(--muted);
@@ -635,6 +636,21 @@ canvas {
   min-width: 0;
   color: var(--ink);
   overflow-wrap: anywhere;
+}
+
+.item-card em {
+  font-size: 0.86rem;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.item-card.relic {
+  border-color: #8a6fb0;
+  background: linear-gradient(135deg, #22251f 0%, #29243a 100%);
+}
+
+.item-card.relic b {
+  color: #f4d98a;
 }
 
 .item-actions,
