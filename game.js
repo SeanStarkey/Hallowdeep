@@ -67,7 +67,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.06.17.01";
+const VERSION = "2026.06.17.02";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const RUN_HISTORY_KEY = "hallowdeep.runHistory";
@@ -78,6 +78,7 @@ const MAX_RUN_HISTORY = 20;
 const MAX_BAG_ITEMS = 4;
 const BOSS_FLOOR_INTERVAL = 5;
 const BOSS_SCORE_BONUS = 250;
+const RUN_STEP_MS = 60;
 
 const {
   bossBook,
@@ -129,6 +130,8 @@ let camera = { x: 0, y: 0 };
 let particles = [];
 let particleAnimId = null;
 let pendingItem = null;
+let runDir = null;
+let runTimer = null;
 
 let debugMode = new URLSearchParams(location.search).has("debug");
 let godMode = false;
@@ -1106,6 +1109,7 @@ function endRun(cause) {
 }
 
 function newGame() {
+  cancelRun();
   closeDeathScreen();
   if (particleAnimId !== null) {
     cancelAnimationFrame(particleAnimId);
@@ -1237,6 +1241,68 @@ function canvasTile(event) {
   };
 }
 
+function anyMonsterVisible() {
+  return state.monsters.some((monster) => visible(monster.x, monster.y));
+}
+
+function canRunInto(x, y) {
+  return !blocked(x, y) && !monsterAt(x, y);
+}
+
+function cancelRun() {
+  runDir = null;
+  if (runTimer !== null) {
+    clearTimeout(runTimer);
+    runTimer = null;
+  }
+}
+
+// Hold Shift with a direction to "run": keep stepping that way, one turn at a
+// time, until the way is blocked or a monster comes into view. If a run cannot
+// begin (blocked, or a monster already in sight) it falls back to a single
+// step so Shift+direction always does something sensible.
+function startRun(dx, dy) {
+  cancelRun();
+  if (state.over || hasOpenDialog()) return;
+  if (anyMonsterVisible() || !canRunInto(state.hero.x + dx, state.hero.y + dy)) {
+    moveHero(dx, dy);
+    return;
+  }
+  runDir = { x: dx, y: dy };
+  runStep();
+}
+
+function runStep() {
+  runTimer = null;
+  if (!runDir || state.over || hasOpenDialog()) {
+    cancelRun();
+    return;
+  }
+
+  const hero = state.hero;
+  if (!canRunInto(hero.x + runDir.x, hero.y + runDir.y)) {
+    cancelRun();
+    return;
+  }
+
+  const depthBefore = state.depth;
+  moveHero(runDir.x, runDir.y);
+
+  // A full turn just passed (statuses, monsters). Stop for anything that wants
+  // the player's attention: death, a dialog, a new floor, or a spotted monster.
+  if (state.over || hasOpenDialog() || state.depth !== depthBefore) {
+    cancelRun();
+    return;
+  }
+  if (anyMonsterVisible()) {
+    cancelRun();
+    addLog("You halt as something stirs in the dark.");
+    render();
+    return;
+  }
+  runTimer = setTimeout(runStep, RUN_STEP_MS);
+}
+
 function moveHero(dx, dy) {
   if (state.over) return;
   const hero = state.hero;
@@ -1261,6 +1327,7 @@ function moveHero(dx, dy) {
 }
 
 function waitHero() {
+  cancelRun();
   if (state.over) return;
   addLog("You hold your ground.");
   spendHeroTurn();
@@ -1608,6 +1675,7 @@ function monsterTurn() {
 }
 
 function drinkPotion() {
+  cancelRun();
   if (state.over) return;
   const hero = state.hero;
   if (hero.potions <= 0) {
@@ -1995,6 +2063,11 @@ applyDebugMode();
 window.addEventListener("keydown", (event) => {
   if (event.target instanceof HTMLInputElement) return;
 
+  // Let an in-progress run keep going on the OS key-repeat of the held key;
+  // any other keypress returns the player to manual control.
+  if (event.repeat && runDir) return;
+  cancelRun();
+
   if (!els.levelupModal.classList.contains("hidden")) {
     const cards = els.levelupContent.querySelectorAll(".perk-card");
     if (event.key === "1" && cards[0]) { event.preventDefault(); cards[0].click(); return; }
@@ -2090,10 +2163,15 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  const dir = dirs[event.key];
+  const dirKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  const dir = dirs[dirKey];
   if (dir) {
     event.preventDefault();
-    moveHero(dir[0], dir[1]);
+    if (event.shiftKey) {
+      startRun(dir[0], dir[1]);
+    } else {
+      moveHero(dir[0], dir[1]);
+    }
   }
 });
 
@@ -2110,10 +2188,12 @@ canvas.addEventListener("click", (event) => {
 document.querySelectorAll("[data-move]").forEach((button) => {
   button.addEventListener("touchstart", (event) => {
     event.preventDefault();
+    cancelRun();
     const [dx, dy] = button.dataset.move.split(",").map(Number);
     moveHero(dx, dy);
   }, { passive: false });
   button.addEventListener("click", () => {
+    cancelRun();
     const [dx, dy] = button.dataset.move.split(",").map(Number);
     moveHero(dx, dy);
   });
