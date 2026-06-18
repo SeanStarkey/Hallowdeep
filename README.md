@@ -2,6 +2,8 @@
 
 Hallowdeep is a browser-based Halloween roguelike with procedural dungeon floors, turn-based combat, character progression, themed monsters, equipment pickups, pumpkin tonics, and a shared high-score board.
 
+Why make this game? This was a "challenge" on a Discord group I'm in to make a Halloween themed game. No other requirements. That is how Hallowdeep was born.
+
 The game is mostly static HTML, CSS, and JavaScript. A small Node.js server serves the files and provides the high-score API.
 
 You can access the game to try at https://www.seanstarkey.dev/Hallowdeep
