@@ -32,6 +32,7 @@ Core files:
 - Keep changes scoped; avoid broad refactors while adding a feature or fixing a bug.
 - Preserve the static-file nature of the game unless the task explicitly calls for tooling.
 - Use ASCII text unless editing content that already uses non-ASCII characters.
+- Always update the `VERSION` constant in `game.js` on any code change. The format is `YYYY.MM.DD.NN`: use today's date with a two-digit increment `NN`. If the date already matches today, bump `NN`; otherwise set today's date with `NN` = `01`.
 
 ## Gameplay And UI Guidance
 

@@ -70,9 +70,10 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.06.26.01";
+const VERSION = "2026.06.26.02";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
+const DEFAULT_PLAYER_NAME = "Rowan Ash";
 const RUN_HISTORY_KEY = "hallowdeep.runHistory";
 const ACTIVE_RUN_KEY = "hallowdeep.activeRun";
 const SAVE_VERSION = 1;
@@ -286,7 +287,23 @@ function key(x, y) {
 }
 
 function loadPlayerName() {
-  return localStorage.getItem(PLAYER_NAME_KEY) || "Rowan Ash";
+  return localStorage.getItem(PLAYER_NAME_KEY) || DEFAULT_PLAYER_NAME;
+}
+
+function hasCustomPlayerName() {
+  const stored = localStorage.getItem(PLAYER_NAME_KEY);
+  return Boolean(stored) && cleanPlayerName(stored) !== DEFAULT_PLAYER_NAME;
+}
+
+function promptForPlayerName() {
+  const entered = window.prompt(
+    "Name your adventurer before you descend into Hallowdeep:",
+    ""
+  );
+  if (entered === null) return;
+  const cleaned = cleanPlayerName(entered);
+  if (cleaned === "Nameless" && entered.trim() === "") return;
+  setPlayerName(cleaned);
 }
 
 function cleanPlayerName(name) {
@@ -2282,6 +2299,9 @@ els.waitActions.forEach((button) => button.addEventListener("click", waitHero));
 els.newGame.addEventListener("click", newGame);
 
 setPlayerName(playerName);
+if (!hasCustomPlayerName()) {
+  promptForPlayerName();
+}
 const savedRun = loadActiveRun();
 if (savedRun) {
   restoreRun(savedRun);
