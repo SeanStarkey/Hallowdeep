@@ -96,6 +96,7 @@ function cleanScore(input) {
     level: Math.max(1, Math.floor(level)),
     kills: Math.max(0, Math.floor(kills)),
     bossKills: Math.max(0, Math.floor(bossKills)),
+    won: Boolean(input.won),
     date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })
   };
 }

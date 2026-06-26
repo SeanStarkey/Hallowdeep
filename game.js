@@ -44,6 +44,9 @@ const els = {
   roadmapModal: document.querySelector("#roadmap-modal"),
   roadmapContent: document.querySelector("#roadmap-content"),
   deathModal: document.querySelector("#death-modal"),
+  deathPanel: document.querySelector(".death-panel"),
+  deathKicker: document.querySelector("#death-kicker"),
+  deathTitle: document.querySelector("#death-title"),
   deathContent: document.querySelector("#death-content"),
   deathClose: document.querySelector("#death-close"),
   deathReview: document.querySelector("#death-review"),
@@ -67,7 +70,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.06.17.02";
+const VERSION = "2026.06.26.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const RUN_HISTORY_KEY = "hallowdeep.runHistory";
@@ -78,6 +81,7 @@ const MAX_RUN_HISTORY = 20;
 const MAX_BAG_ITEMS = 4;
 const BOSS_FLOOR_INTERVAL = 5;
 const BOSS_SCORE_BONUS = 250;
+const WIN_SCORE_BONUS = 1000;
 const RUN_STEP_MS = 60;
 
 const {
@@ -104,6 +108,11 @@ const fallbackBossBook = [
     relic: "candleKingsWick"
   }
 ];
+
+const bossRoster = Array.isArray(bossBook) && bossBook.length ? bossBook : fallbackBossBook;
+// The deepest boss is the final boss; slaying it on its floor wins the run.
+const FINAL_DEPTH = Math.max(...bossRoster.map((boss) => boss.minDepth));
+const finalBoss = bossRoster.find((boss) => boss.minDepth === FINAL_DEPTH) || bossRoster[bossRoster.length - 1];
 
 const PERKS = [
   { id: "ironConstitution", name: "Iron Constitution", desc: "+15 max HP. Restore to full." },
@@ -377,6 +386,7 @@ function runRecordFor(runState) {
     kills: hero.kills,
     bossKills: hero.bossKills,
     xp: hero.totalXp,
+    won: Boolean(runState.won),
     cause: runState.deathCause || "The dungeon finished the tale.",
     weapon: hero.equipment.weapon.name,
     charm: hero.equipment.charm.name,
@@ -639,9 +649,12 @@ function monsterForDepth(depth) {
 }
 
 function bossForDepth(depth) {
-  const bosses = Array.isArray(bossBook) && bossBook.length ? bossBook : fallbackBossBook;
-  const candidates = bosses.filter((boss) => boss.minDepth <= depth);
-  return candidates[candidates.length - 1] || bosses[0];
+  const candidates = bossRoster.filter((boss) => boss.minDepth <= depth);
+  return candidates[candidates.length - 1] || bossRoster[0];
+}
+
+function isFinalDepth(depth) {
+  return depth >= FINAL_DEPTH;
 }
 
 function scaleMonster(base, depth) {
@@ -785,7 +798,9 @@ function placeLevel(depth, hero) {
   state.bossFloor = bossFloor;
   state.visited = Array.from({ length: H }, () => new Uint8Array(W));
 
-  if (bossFloor) {
+  if (bossFloor && isFinalDepth(depth)) {
+    addLog(`The deep ends here. ${finalBoss.name} stirs — slay it to escape Hallowdeep.`, "danger");
+  } else if (bossFloor) {
     addLog("The stairs seal with cold fire. A lord of the deep is near.", "danger");
   }
 }
@@ -868,11 +883,13 @@ function historyCardHtml(run, index, compact = false) {
   const rank = index + 1;
   const score = Number(run.score || 0).toLocaleString();
   const detail = `D${run.depth || 1} L${run.level || 1} K${run.kills || 0} B${run.bossKills || 0}`;
+  const wonBadge = run.won ? '<span class="victory-badge">Victory</span>' : "";
+  const wonMark = run.won ? " [W]" : "";
   if (compact) {
     return `
       <article class="history-row">
         <div>
-          <strong>${rank}. ${escapeHtml(run.name || "Nameless")}: ${score}</strong>
+          <strong>${rank}. ${escapeHtml(run.name || "Nameless")}: ${score}${wonMark}</strong>
           <span>${detail} - ${escapeHtml(formatRunDate(run.date))}</span>
         </div>
       </article>
@@ -880,11 +897,11 @@ function historyCardHtml(run, index, compact = false) {
   }
 
   return `
-    <article class="history-card">
+    <article class="history-card${run.won ? " victory" : ""}">
       <div class="history-card-head">
         <div>
           <span>${escapeHtml(formatRunDate(run.date))}</span>
-          <strong>${escapeHtml(run.name || "Nameless")}</strong>
+          <strong>${escapeHtml(run.name || "Nameless")}${wonBadge}</strong>
         </div>
         <b>${score}</b>
       </div>
@@ -919,6 +936,10 @@ function closeHistory() {
 }
 
 function openDeathScreen() {
+  const won = Boolean(state.won);
+  els.deathKicker.textContent = won ? "Victory" : "Run Complete";
+  els.deathTitle.textContent = won ? "The Hallowdeep Is Vanquished" : "The Hallowdeep Claims You";
+  els.deathPanel.classList.toggle("victory", won);
   els.deathContent.innerHTML = deathScreenHtml();
   els.deathModal.classList.remove("hidden");
 }
@@ -1011,7 +1032,14 @@ function hasOpenDialog() {
 
 function scoreRunFor(runState) {
   const hero = runState.hero;
-  return hero.totalXp + hero.kills * 10 + (runState.depth - 1) * 75 + (hero.level - 1) * 50 + (runState.bossScoreBonus || 0);
+  return (
+    hero.totalXp +
+    hero.kills * 10 +
+    (runState.depth - 1) * 75 +
+    (hero.level - 1) * 50 +
+    (runState.bossScoreBonus || 0) +
+    (runState.won ? WIN_SCORE_BONUS : 0)
+  );
 }
 
 function scoreRun() {
@@ -1029,7 +1057,8 @@ async function recordScore(runState = state) {
     depth: runState.depth,
     level: hero.level,
     kills: hero.kills,
-    bossKills: hero.bossKills
+    bossKills: hero.bossKills,
+    won: Boolean(runState.won)
   };
 
   try {
@@ -1068,6 +1097,9 @@ function deathScreenHtml() {
   const weapon = hero.equipment.weapon;
   const charm = hero.equipment.charm;
   const cause = state.deathCause || "The dungeon finished the tale.";
+  const winBonusStat = state.won
+    ? `<div><span>Victory Bonus</span><b>${WIN_SCORE_BONUS}</b></div>`
+    : "";
 
   return `
     <div class="death-score">
@@ -1082,6 +1114,7 @@ function deathScreenHtml() {
       <div><span>Boss Kills</span><b>${hero.bossKills}</b></div>
       <div><span>XP Earned</span><b>${hero.totalXp}</b></div>
       <div><span>Boss Bonus</span><b>${state.bossScoreBonus}</b></div>
+      ${winBonusStat}
     </div>
     <div class="death-loadout">
       <h3>Gear At Death</h3>
@@ -1095,9 +1128,10 @@ function deathScreenHtml() {
   `;
 }
 
-function endRun(cause) {
+function endRun(cause, { won = false } = {}) {
   if (state.over) return;
   state.over = true;
+  state.won = won;
   state.deathCause = cause;
   clearActiveRun();
   pendingItem = null;
@@ -1106,6 +1140,11 @@ function endRun(cause) {
   recordRunHistory(state);
   recordScore(state);
   openDeathScreen();
+}
+
+function winRun(cause) {
+  cancelRun();
+  endRun(cause, { won: true });
 }
 
 function newGame() {
@@ -1128,6 +1167,7 @@ function newGame() {
     bossScoreBonus: 0,
     log: [],
     over: false,
+    won: false,
     scored: false,
     deathCause: "",
     killCounts: {},
@@ -1427,12 +1467,15 @@ function attack(attacker, defender) {
         if (defender.boss) {
           state.hero.bossKills += 1;
           state.bossScoreBonus += defender.scoreBonus;
-          dropBossRelic(defender);
         }
         state.killCounts[defender.name] = (state.killCounts[defender.name] || 0) + 1;
         gainXp(defender.xp);
         healHeroFromKill(defender);
-        if (defender.boss) {
+        if (defender.boss && isFinalDepth(state.depth)) {
+          addLog(`${defender.name} is undone. The deep falls silent — the Hallowdeep is conquered!`, "good");
+          winRun(`You vanquished ${defender.name} in the depths of Hallowdeep.`);
+        } else if (defender.boss) {
+          dropBossRelic(defender);
           addLog(`${defender.name} falls. The stairs burn open. +${defender.scoreBonus} score.`, "good");
         } else {
           addLog(`${defender.name} falls into dust.`, "good");
@@ -1924,7 +1967,7 @@ function renderUi() {
     ? highScores
         .map(
           (score) =>
-            `<li><div class="score-row"><strong>${escapeHtml(score.name || "Nameless")}: ${score.score}</strong><span>D${score.depth} L${score.level} K${score.kills} B${score.bossKills || 0} - ${score.date}</span></div></li>`
+            `<li><div class="score-row"><strong>${escapeHtml(score.name || "Nameless")}: ${score.score}${score.won ? '<span class="victory-badge">Victory</span>' : ""}</strong><span>D${score.depth} L${score.level} K${score.kills} B${score.bossKills || 0} - ${score.date}</span></div></li>`
         )
         .join("")
     : `<li class="empty">${scoreStatus}</li>`;

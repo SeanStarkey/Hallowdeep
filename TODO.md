@@ -8,7 +8,6 @@
 - Add themed dungeon features such as locked doors, coffins, altars, traps, and shrines.
 - Add special room encounter types such as treasure rooms, ambush rooms, ritual rooms, flooded crypts, and candle mazes.
 - Add consumables beyond pumpkin tonics, such as holy water, salt circles, and lantern oil.
-- Add a win condition or final depth instead of endless descent.
 - Add more derived stats, resistances, or secondary attributes to the character.
 - Add a crafting ability.
 - Add a light source, making the spotlight different sizes based on what you have.

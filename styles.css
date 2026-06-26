@@ -582,6 +582,34 @@ canvas {
   width: min(42rem, 100%);
 }
 
+.death-panel.victory {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green), 0 1.5rem 3rem rgba(0, 0, 0, 0.55);
+}
+
+.death-panel.victory .death-score strong {
+  color: var(--green);
+}
+
+.victory-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--green);
+  border-radius: 999px;
+  background: rgba(121, 165, 111, 0.15);
+  color: var(--green);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.history-card.victory {
+  border-color: var(--green);
+}
+
 .history-panel {
   width: min(44rem, 100%);
 }
