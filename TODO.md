@@ -43,9 +43,7 @@
 - Add keyboard rebinding stored in localStorage for non-QWERTY layouts and personal preference.
 - Add a first-run contextual hint (checked in localStorage) explaining movement and the goal.
 - Prompt user to change their name if it is the default at game start.
-- Expand death recaps with turns survived, damage dealt/taken, best item found, killer ability, and status at death.
 - Add hit feedback such as brief screen shake and sprite flash on damage, with a reduce-motion toggle.
-- Add a shareable death recap: copy-to-clipboard text summary of a run (morgue file).
 
 ## Persistence And Replayability
 

@@ -803,6 +803,7 @@ canvas {
 
 .death-score span,
 .death-stats span,
+.death-final span,
 .death-loadout span {
   color: var(--muted);
   font-size: 0.8rem;
@@ -848,17 +849,20 @@ canvas {
   font-size: 1.15rem;
 }
 
+.death-final,
 .death-loadout,
 .death-breakdown {
   display: grid;
   gap: 0.65rem;
 }
 
+.death-final h3,
 .death-loadout h3,
 .death-breakdown h3 {
   margin-bottom: 0;
 }
 
+.death-final div,
 .death-loadout div {
   display: grid;
   grid-template-columns: minmax(5rem, auto) 1fr;
@@ -870,16 +874,20 @@ canvas {
   background: #22251f;
 }
 
+.death-final b,
+.death-final small,
 .death-loadout b,
 .death-loadout small {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
+.death-final b,
 .death-loadout b {
   color: var(--ink);
 }
 
+.death-final small,
 .death-loadout small {
   grid-column: 2;
   color: var(--muted);

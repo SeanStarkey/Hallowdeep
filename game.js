@@ -50,6 +50,7 @@ const els = {
   deathContent: document.querySelector("#death-content"),
   deathClose: document.querySelector("#death-close"),
   deathReview: document.querySelector("#death-review"),
+  deathMorgue: document.querySelector("#death-morgue"),
   deathNewRun: document.querySelector("#death-new-run"),
   itemModal: document.querySelector("#item-modal"),
   itemKicker: document.querySelector("#item-kicker"),
@@ -70,7 +71,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.06.26.02";
+const VERSION = "2026.06.30.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const DEFAULT_PLAYER_NAME = "Rowan Ash";
@@ -488,6 +489,27 @@ function itemSummary(item) {
 
 function isRealItem(item) {
   return item && item.tier > 0;
+}
+
+// A rough "how good is this find" weighting used to remember the best item a
+// run turned up. Tier dominates, with stat bonuses and relic status as tiebreaks.
+function itemPower(item) {
+  if (!isRealItem(item)) return 0;
+  return (
+    (item.tier || 0) * 5 +
+    (item.attack || 0) * 2 +
+    (item.defense || 0) * 2 +
+    (item.will || 0) +
+    (item.light || 0) +
+    (item.relic ? 10 : 0)
+  );
+}
+
+function recordFoundItem(item) {
+  if (!isRealItem(item)) return;
+  if (!state.bestItem || itemPower(item) > itemPower(state.bestItem)) {
+    state.bestItem = { ...item };
+  }
 }
 
 function itemCardHtml(item, label = "") {
@@ -967,6 +989,7 @@ function closeDeathScreen() {
 
 function showFoundItemModal(item) {
   pendingItem = item;
+  recordFoundItem(item);
   const hero = state.hero;
   const current = hero.equipment[item.slot];
   const bagFull = hero.bag.length >= MAX_BAG_ITEMS;
@@ -1108,6 +1131,24 @@ function killBreakdownHtml() {
     .join("")}</ol>`;
 }
 
+function felledByLabel() {
+  return state.won ? "Final Blow" : "Felled By";
+}
+
+function felledByName() {
+  if (state.won) return "You stood victorious";
+  if (state.killer && state.killer.name) return state.killer.name;
+  return state.deathCause || "The dungeon";
+}
+
+function killerAbilityName() {
+  return state.killer && state.killer.ability ? state.killer.ability : "";
+}
+
+function bestFindName() {
+  return state.bestItem ? state.bestItem.name : "Nothing of note";
+}
+
 function deathScreenHtml() {
   const hero = state.hero;
   const score = scoreRun().toLocaleString();
@@ -1117,6 +1158,11 @@ function deathScreenHtml() {
   const winBonusStat = state.won
     ? `<div><span>Victory Bonus</span><b>${WIN_SCORE_BONUS}</b></div>`
     : "";
+  const killerAbility = killerAbilityName();
+  const bestItem = state.bestItem;
+  const bestFindSmall = bestItem
+    ? `${bestItem.slot}, ${itemStats(bestItem)}`
+    : "Your hands stayed empty";
 
   return `
     <div class="death-score">
@@ -1127,11 +1173,20 @@ function deathScreenHtml() {
     <div class="death-stats" aria-label="Run summary">
       <div><span>Depth</span><b>${state.depth}</b></div>
       <div><span>Level</span><b>${hero.level}</b></div>
+      <div><span>Turns Survived</span><b>${state.turns || 0}</b></div>
       <div><span>Total Kills</span><b>${hero.kills}</b></div>
       <div><span>Boss Kills</span><b>${hero.bossKills}</b></div>
       <div><span>XP Earned</span><b>${hero.totalXp}</b></div>
+      <div><span>Damage Dealt</span><b>${state.damageDealt || 0}</b></div>
+      <div><span>Damage Taken</span><b>${state.damageTaken || 0}</b></div>
       <div><span>Boss Bonus</span><b>${state.bossScoreBonus}</b></div>
       ${winBonusStat}
+    </div>
+    <div class="death-final">
+      <h3>Final Stand</h3>
+      <div><span>${felledByLabel()}</span><b>${escapeHtml(felledByName())}</b>${killerAbility ? `<small>${escapeHtml(killerAbility)}</small>` : ""}</div>
+      <div><span>Status At Death</span><b>${escapeHtml(state.statusAtDeath || statusText(hero))}</b></div>
+      <div><span>Best Find</span><b>${escapeHtml(bestFindName())}</b><small>${escapeHtml(bestFindSmall)}</small></div>
     </div>
     <div class="death-loadout">
       <h3>Gear At Death</h3>
@@ -1145,11 +1200,87 @@ function deathScreenHtml() {
   `;
 }
 
+// Plain-text run summary the player can copy and share - a classic roguelike
+// "morgue file". Mirrors what the death screen shows, in fixed text form.
+function morgueText() {
+  const hero = state.hero;
+  const score = scoreRun();
+  const outcome = state.won ? "Conquered the Hallowdeep" : `Fell on Depth ${state.depth}`;
+  const killerAbility = killerAbilityName();
+  const felled = `${state.won ? "Final blow" : "Felled by"}: ${felledByName()}${killerAbility ? ` (${killerAbility})` : ""}`;
+  const bestItem = state.bestItem;
+  const bestFind = bestItem
+    ? `${bestItem.name} (${bestItem.slot}, ${itemStats(bestItem)})`
+    : "Nothing of note";
+  const lines = [
+    "=== Hallowdeep Morgue File ===",
+    `${playerName || "Nameless"} - ${outcome}`,
+    `Score: ${score.toLocaleString()}`,
+    `Cause: ${state.deathCause || "The dungeon finished the tale."}`,
+    "",
+    `Depth ${state.depth}  |  Level ${hero.level}  |  Turns ${state.turns || 0}`,
+    `Kills ${hero.kills} (bosses ${hero.bossKills})  |  XP ${hero.totalXp}`,
+    `Damage dealt ${state.damageDealt || 0}  |  Damage taken ${state.damageTaken || 0}`,
+    "",
+    felled,
+    `Status at death: ${state.statusAtDeath || statusText(hero)}`,
+    `Best find: ${bestFind}`,
+    `Gear: ${hero.equipment.weapon.name} / ${hero.equipment.charm.name}`,
+    `Most slain: ${topKillName(state.killCounts)}`,
+    "",
+    `Hallowdeep v${VERSION}`
+  ];
+  return lines.join("\n");
+}
+
+async function copyMorgueFile() {
+  const button = els.deathMorgue;
+  const text = morgueText();
+  let copied = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
+  } catch {
+    copied = false;
+  }
+  if (!copied) {
+    copied = copyTextFallback(text);
+  }
+  if (!button) return;
+  const original = button.dataset.label || button.textContent;
+  button.dataset.label = original;
+  button.textContent = copied ? "Copied!" : "Copy failed";
+  clearTimeout(copyMorgueFile.resetTimer);
+  copyMorgueFile.resetTimer = setTimeout(() => {
+    button.textContent = button.dataset.label || "Copy Morgue File";
+  }, 1600);
+}
+
+function copyTextFallback(text) {
+  try {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(area);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function endRun(cause, { won = false } = {}) {
   if (state.over) return;
   state.over = true;
   state.won = won;
   state.deathCause = cause;
+  state.statusAtDeath = statusText(state.hero);
   clearActiveRun();
   pendingItem = null;
   els.itemModal.classList.add("hidden");
@@ -1188,7 +1319,13 @@ function newGame() {
     scored: false,
     deathCause: "",
     killCounts: {},
-    levelUpQueue: []
+    levelUpQueue: [],
+    turns: 0,
+    damageDealt: 0,
+    damageTaken: 0,
+    bestItem: null,
+    killer: null,
+    statusAtDeath: ""
   };
   placeLevel(1, state.hero);
   addLog("You descend beneath the pumpkin fields.");
@@ -1391,6 +1528,8 @@ function waitHero() {
 }
 
 function spendHeroTurn() {
+  state.turns = (state.turns || 0) + 1;
+
   if (!state.over) {
     tickHeroStatuses();
   }
@@ -1431,10 +1570,12 @@ function tickHeroStatuses() {
   const hero = state.hero;
   if (hero.statuses.poison > 0) {
     hero.hp = Math.max(0, hero.hp - 2);
+    state.damageTaken = (state.damageTaken || 0) + 2;
     spawnDamageParticle(hero.x, hero.y, 2, true);
     addLog("Poison burns for 2 HP.", "danger");
     if (hero.hp <= 0) {
       if (!triggerDeathSave("Poison finished the run.")) {
+        state.killer = { name: "Lingering poison", ability: null };
         endRun("Poison finished the run.");
         addLog("The poison finishes the run.", "danger");
       }
@@ -1445,10 +1586,12 @@ function tickHeroStatuses() {
     const damage = Math.max(0, 1 - equippedEffectTotal(hero, "burningDamageReduction"));
     if (damage > 0) {
       hero.hp = Math.max(0, hero.hp - damage);
+      state.damageTaken = (state.damageTaken || 0) + damage;
       spawnDamageParticle(hero.x, hero.y, damage, true);
       addLog(`Flames scorch for ${damage} HP.`, "danger");
       if (hero.hp <= 0) {
         if (!triggerDeathSave("Flames consumed the last of your strength.")) {
+          state.killer = { name: "Creeping flames", ability: null };
           endRun("Flames consumed the last of your strength.");
           addLog("The flames consume the last of your strength.", "danger");
         }
@@ -1473,6 +1616,7 @@ function attack(attacker, defender) {
   defender.hp -= damage;
 
   if (heroAttack) {
+    state.damageDealt = (state.damageDealt || 0) + damage;
     spawnDamageParticle(defender.x, defender.y, damage, false);
     addLog(`You strike the ${defender.name} for ${damage}.`);
     if (defender.hp <= 0) {
@@ -1502,6 +1646,7 @@ function attack(attacker, defender) {
       ability.onHeroHitMonster(defender, attacker, damage);
     }
   } else {
+    state.damageTaken = (state.damageTaken || 0) + damage;
     spawnDamageParticle(defender.x, defender.y, damage, true);
     addLog(`${attacker.name} wounds you for ${damage}.`, "danger");
     if (ability?.onMonsterHitHero) {
@@ -1512,6 +1657,7 @@ function attack(attacker, defender) {
         return;
       }
       defender.hp = 0;
+      state.killer = { name: attacker.name, ability: ability ? ability.name : null };
       endRun(`${attacker.name} struck the final blow.`);
       addLog("Your lantern gutters out. The run is over.", "danger");
     }
@@ -2280,6 +2426,7 @@ els.historyModal.addEventListener("click", (event) => {
 });
 els.deathClose.addEventListener("click", closeDeathScreen);
 els.deathReview.addEventListener("click", closeDeathScreen);
+els.deathMorgue.addEventListener("click", copyMorgueFile);
 els.deathNewRun.addEventListener("click", newGame);
 els.itemClose.addEventListener("click", () => closeItemModal({ leavePending: true }));
 els.itemModal.addEventListener("click", (event) => {
