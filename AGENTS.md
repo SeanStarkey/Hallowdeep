@@ -56,5 +56,6 @@ Core files:
 - Read nearby code before editing, and follow existing patterns.
 - Summarize changed behavior and verification steps when finishing work.
 - If tests cannot be run because none exist, say so and describe the manual check used instead.
-- When Codex makes code changes and is asked to create a git commit, include `Co-authored-by: Codex <codex@openai.com>` in the commit message.
-- Do not add the Codex co-author trailer for commits that only contain user-authored work or by other AIs.
+- When any AI model (Codex, Claude, DeepSeek, or another) makes code changes and is asked to create a git commit, include a `Co-authored-by: <Model> <email>` trailer in the commit message identifying that model.
+- Use a consistent identity per model, e.g. `Co-authored-by: Codex <codex@openai.com>`, `Co-authored-by: Claude <noreply@anthropic.com>`, or `Co-authored-by: DeepSeek <noreply@deepseek.com>`.
+- Do not add the co-author trailer for commits that only contain user-authored work.
