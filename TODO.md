@@ -2,7 +2,6 @@
 
 ## Priority 1: Groundwork
 
-- Route all randomness through a seedable RNG (wrap `rand()` and `chance()` around e.g. mulberry32) before more systems add call sites; this unblocks seeded and daily runs later.
 - Split `game.js` into smaller script files (map generation, combat, rendering, persistence, UI wiring) without adding build tooling.
 
 ## Priority 2: Combat Depth
