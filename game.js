@@ -71,7 +71,7 @@ const FLOOR = ".";
 const WALL = "#";
 const STAIRS = ">";
 const TONIC = "!";
-const VERSION = "2026.07.03.01";
+const VERSION = "2026.08.13.01";
 const SCORE_API = "api/scores";
 const PLAYER_NAME_KEY = "hallowdeep.playerName";
 const DEFAULT_PLAYER_NAME = "Rowan Ash";
@@ -271,13 +271,34 @@ const abilityDefinitions = {
   }
 };
 
+// Seedable RNG (mulberry32). All in-game randomness flows through this so a
+// seeded or daily run can reproduce the same dungeon from a single seed.
+let rngState = 0x9E3779B9; // arbitrary non-zero default; reseeded below
+
+function seedRng(seed) {
+  rngState = seed >>> 0;
+  return rngState;
+}
+
+function random() {
+  rngState = (rngState + 0x6D2B79F5) >>> 0;
+  let t = rngState;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
 function rand(max) {
-  return Math.floor(Math.random() * max);
+  return Math.floor(random() * max);
 }
 
 function chance(n) {
-  return Math.random() < n;
+  return random() < n;
 }
+
+// Seed with an unpredictable value so ordinary play behaves as before. A future
+// daily/seed run will call seedRng() with an explicit seed instead.
+seedRng((Date.now() ^ Math.floor(Math.random() * 0xFFFFFFFF)) >>> 0);
 
 function distance(a, b) {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -395,7 +416,7 @@ function topKillName(killCounts) {
 function runRecordFor(runState) {
   const hero = runState.hero;
   return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: `${Date.now()}-${random().toString(36).slice(2, 8)}`,
     name: playerName,
     date: new Date().toISOString(),
     score: scoreRunFor(runState),
@@ -1686,7 +1707,7 @@ function pickThreePerks() {
   const pool = [...PERKS];
   const chosen = [];
   while (chosen.length < 3 && pool.length > 0) {
-    const i = Math.floor(Math.random() * pool.length);
+    const i = rand(pool.length);
     chosen.push(pool.splice(i, 1)[0]);
   }
   return chosen;
@@ -1868,7 +1889,7 @@ function monsterTurn() {
     const options = [
       { x: monster.x + Math.sign(hero.x - monster.x), y: monster.y },
       { x: monster.x, y: monster.y + Math.sign(hero.y - monster.y) }
-    ].sort(() => Math.random() - 0.5);
+    ].sort(() => random() - 0.5);
 
     for (const next of options) {
       if (openForMonster(next.x, next.y, monster)) {
